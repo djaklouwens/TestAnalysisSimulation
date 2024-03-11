@@ -11,21 +11,38 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from pykrige.ok import OrdinaryKriging
+from TEC_Kriging import tec
 
-# Make this example reproducible:
-np.random.seed(89239413)
 
-# Generate random data following a uniform spatial distribution
-# of nodes and a uniform distribution of values in the interval
-# [2.0, 5.5]:
+maxlon = 90 #+30
+maxlat = 45 #+15
+
 N = 7
-lon = 360.0 * np.random.random(N)
-lat = 180.0 / np.pi * np.arcsin(2 * np.random.random(N) - 1)
-z = 3.5 * np.random.rand(N) + 2.0
+lon = np.linspace(0.0, maxlon-1, maxlon)
+lat = np.linspace(0, maxlat-1, maxlat)
+print("lat array: ", lat)
+z = np.array([])
+for i in range(0, maxlon):
+    for j in range(0,maxlat):
+        z = np.append(z, tec(j, i))
+        
+print(z.mean)
+        
+print("tec array: ", z)
+
+lon = np.repeat(lon, maxlat)
+lat = np.tile(lat, maxlon)
+
+print("sizes: ", lon.size, lat.size, z.size)
+print("tiled lat: ", lat)
 
 # Generate a regular grid with 60° longitude and 30° latitude steps:
-grid_lon = np.linspace(0.0, 360.0, 7)
-grid_lat = np.linspace(-90.0, 90.0, 7)
+#grid_lon = np.linspace(-180, -90, 100)
+#grid_lat = np.linspace(90.0, 45, 100)
+
+grid_lon = np.linspace(0, 180, 100)
+grid_lat = np.linspace(0, 90, 100)
+
 
 # Create ordinary kriging object:
 OK = OrdinaryKriging(
@@ -41,13 +58,13 @@ OK = OrdinaryKriging(
 # Execute on grid:
 z1, ss1 = OK.execute("grid", grid_lon, grid_lat)
 
-# Create ordinary kriging object ignoring curvature:
-OK = OrdinaryKriging(
-    lon, lat, z, variogram_model="linear", verbose=False, enable_plotting=False
-)
+# # Create ordinary kriging object ignoring curvature:
+# OK = OrdinaryKriging(
+#     lon, lat, z, variogram_model="linear", verbose=False, enable_plotting=False
+# )
 
-# Execute on grid:
-z2, ss2 = OK.execute("grid", grid_lon, grid_lat)
+# # Execute on grid:
+# z2, ss2 = OK.execute("grid", grid_lon, grid_lat)
 
 ###############################################################################
 # Print data at equator (last longitude index will show periodicity):
@@ -60,21 +77,11 @@ print("\nKrige at 60° latitude:\n======================")
 print("Longitude:", grid_lon)
 print("Value:    ", np.array_str(z1[5, :], precision=2))
 print("Sigma²:   ", np.array_str(ss1[5, :], precision=2))
-print("\nIgnoring curvature:\n=====================")
-print("Value:    ", np.array_str(z2[5, :], precision=2))
-print("Sigma²:   ", np.array_str(ss2[5, :], precision=2))
 
 ###############################################################################
-# We can see that the data point at longitude 122, latitude 50 correctly
-# dominates the kriged results, since it is the closest node in spherical
-# distance metric, as longitude differences scale with cos(latitude).
-# When kriging using longitude / latitude linearly, the value for grid points
-# with longitude values further away as longitude is now incorrectly
-# weighted equally as latitude.
 
-fig, (ax1, ax2) = plt.subplots(1, 2)
-ax1.imshow(z1, extent=[0, 360, -90, 90], origin="lower")
-ax1.set_title("geo-coordinates")
-ax2.imshow(z2, extent=[0, 360, -90, 90], origin="lower")
-ax2.set_title("non geo-coordinates")
+print(z1)
+plt.imshow(z1, extent=[-180, -90, 90, 45], origin="upper")
+#plt.set_title("geo-coordinates")
+plt.colorbar()
 plt.show()

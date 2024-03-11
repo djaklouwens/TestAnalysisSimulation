@@ -18,7 +18,7 @@ np.random.seed(89239413)
 # Generate random data following a uniform spatial distribution
 # of nodes and a uniform distribution of values in the interval
 # [2.0, 5.5]:
-N = 380
+N = 7
 lon = 360.0 * np.random.random(N)
 lat = 180.0 / np.pi * np.arcsin(2 * np.random.random(N) - 1)
 z = 3.5 * np.random.rand(N) + 2.0
@@ -32,10 +32,11 @@ OK = OrdinaryKriging(
     lon,
     lat,
     z,
-    variogram_model="linear",
+    variogram_model="exponential",
     verbose=False,
-    enable_plotting=False,
+    enable_plotting=True,
     coordinates_type="geographic",
+    nlags=100,
 )
 
 # Execute on grid:
