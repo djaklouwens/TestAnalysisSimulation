@@ -18,7 +18,7 @@ np.random.seed(89239413)
 # Generate random data following a uniform spatial distribution
 # of nodes and a uniform distribution of values in the interval
 # [2.0, 5.5]:
-N = 7
+N = 380
 lon = 360.0 * np.random.random(N)
 lat = 180.0 / np.pi * np.arcsin(2 * np.random.random(N) - 1)
 z = 3.5 * np.random.rand(N) + 2.0

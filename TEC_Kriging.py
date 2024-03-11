@@ -18,6 +18,24 @@ tecmatrix =  ds['tecmap'][time,:]
 def tec(lat, lon):
     return tecmatrix[lat, lon]
 
+"""
+x_star = np.array([5, 5])
+
+Y = np.array([])
+for i in range(0, 10):
+    for j in range(0, 10):
+        Y = np.append(Y, tec(i, j))
+
+
+
+
+   
+
+
+def v(r): #TODO
+    return 1
+
+
 
 # calculate the semivariance
 def semivariance(tec1, tec2):
@@ -55,3 +73,4 @@ print(f"The time of execution of above program is : {td:.03f}ms")
 #print("vars: " , vars)
 plt.scatter(distances, vars)
 plt.show()
+"""
