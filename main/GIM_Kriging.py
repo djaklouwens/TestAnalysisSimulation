@@ -6,6 +6,8 @@ from datetime import datetime
 import os
 from gim_tools import *
 
+#THIS IS AN OLD VERSION USING THE PANOPLY COORDINATE SYSTEM, WHICH IS NOT SUPPORTED BY PYKRIGE
+
 time = 0    #must be smaller than 96
 # get the netcdf filepath
 fd = os.path.dirname(os.path.realpath('__file__'))
