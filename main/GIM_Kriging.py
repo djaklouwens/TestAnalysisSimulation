@@ -4,6 +4,7 @@ from pykrige.ok import OrdinaryKriging
 import netCDF4 as nc
 from datetime import datetime
 import os
+from gim_tools import *
 
 time = 0    #must be smaller than 96
 # get the netcdf filepath
@@ -71,8 +72,6 @@ def index_to_geo(x, y):
             return
     return lon, lat
 
-
-
 def tec_kriging(lon, lat, lon_halfrange=45, lat_halfrange=22, image=False, plot_variogram=False):   
     x,y = geo_to_index(lon, lat, rounding=True)
     x_array = np.linspace(x-lon_halfrange, x+lon_halfrange, 2*lon_halfrange+1).astype(int)
@@ -88,7 +87,7 @@ def tec_kriging(lon, lat, lon_halfrange=45, lat_halfrange=22, image=False, plot_
             z_array = np.append(z_array, tec(x_array[i], y_array[j]))
     
     print(x_array)
-    lon_array, lat_array = index_to_geo(x_array, y_array)        
+    lon_array, lat_array = index_to_geo(x_array, y_array)
     
     lon_dims = np.repeat(lon_array, len(lat_array))
     lat_dims = np.tile(lat_array, len(lon_array))
@@ -103,6 +102,7 @@ def tec_kriging(lon, lat, lon_halfrange=45, lat_halfrange=22, image=False, plot_
         lon_dims,
         lat_dims,
         z_array,
+
         variogram_model="spherical",
         verbose=False,
         enable_plotting=plot_variogram,
@@ -120,4 +120,46 @@ def tec_kriging(lon, lat, lon_halfrange=45, lat_halfrange=22, image=False, plot_
     z1, ss1 = OK.execute("points", [lat], [lon])
     return z1
 
+
 print(tec_kriging(180,0, lon_halfrange=45, lat_halfrange=22, image=True, plot_variogram=True))
+
+
+def time_interpolation(lon:float, lat:float, sat_date:float, time_res:int=0)->float:
+    '''
+    Function to linearly interpolate between two TEC maps,
+    before and after the satellite's time, in order to stimate
+    the TEC at the satellite's time.
+
+    Parameters
+    ----------
+    lon: float
+        The satellite's longitude.
+    lat: float
+        The satellite's latitude.
+    sat_date: float
+        The date of the satellite's measurement.
+    time_res: float
+        The time difference between the two TEC maps (15min/2h).
+
+    Returns
+    -------
+    tec: float
+        The estimated altitude after TEC interpolation in time and position.
+
+    
+    '''
+
+    if time_res == 0: t = 15
+    elif time_res == 1: t = 120
+
+    gim1, gim2 = get_TEC(sat_date, time_res)[0]
+    
+    t_gim1 = split_time_date(get_TEC(sat_date, time_res)[1][0])[0]
+    sat_time = split_time_date(sat_date)[0]
+    sat_rel_time = sat_time[0]*60 + sat_time[1] - t_gim1[0]*60 - t_gim1[1]
+
+
+    tec = tec_kriging(lon, lat, gim1) + (tec_kriging(lon, lat, gim2) - tec_kriging(lon, lat, gim1)) * sat_rel_time / t
+
+    return tec
+
