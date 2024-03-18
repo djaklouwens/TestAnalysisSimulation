@@ -4,11 +4,12 @@ from pykrige.ok import OrdinaryKriging
 import netCDF4 as nc
 from datetime import datetime
 import os
+from gim_tools import *
 
 time = 0    #must be smaller than 96
 # get the netcdf filepath
 fd = os.path.dirname(os.path.realpath('__file__'))
-fn = os.path.join(fd,'GIMs\jpli0750.17i.nc')
+fn = os.path.join(fd,'main\GIMs\jpli0750.17i.nc')
 
 # read the tecmap from the netcdf file
 ds = nc.Dataset(fn)
@@ -36,7 +37,7 @@ def geo_to_index(lon, lat, rounding=False):
         return x,y
 
 
-def tec_kriging(lon, lat, lon_halfrange=45, lat_halfrange=22, image=False):
+def tec_kriging(lon, lat, lon_halfrange=45, lat_halfrange=22, image=False, plot=True):
     x,y = geo_to_index(lon, lat, rounding=True)
     x_array = np.linspace(x-lon_halfrange, x+lon_halfrange, 2*lon_halfrange+1).astype(int)
     y_array = np.linspace(y-lat_halfrange, y+lat_halfrange, 2*lat_halfrange+1).astype(int)
@@ -44,8 +45,8 @@ def tec_kriging(lon, lat, lon_halfrange=45, lat_halfrange=22, image=False):
     #y_array = y_array[mask]
     y_array = y_array[(159 >= y_array)]
     y_array = y_array[(y_array > 0)]
-    print(y_array)
-    print(y_array.max(), y_array.min())
+    # print(y_array)
+    # print(y_array.max(), y_array.min())
     z_array = np.array([])
     
     for i in range(len(x_array)):
@@ -54,7 +55,7 @@ def tec_kriging(lon, lat, lon_halfrange=45, lat_halfrange=22, image=False):
                 y_array = np.delete(y_array, j)
             
             if y_array[j] < 0:
-                print(y_array[j])
+                # print(y_array[j])
                 y_array = np.delete(y_array, j)
                
             else: z_array = np.append(z_array, tec(x_array[i], y_array[j]))
@@ -71,12 +72,13 @@ def tec_kriging(lon, lat, lon_halfrange=45, lat_halfrange=22, image=False):
         x_dims,
         y_dims,
         z_array,
-        variogram_model="gaussian",
+        variogram_model="exponential",
         verbose=False,
-        enable_plotting=True,
-        nlags=10,
+        enable_plotting=plot,
+        nlags=100,
         coordinates_type="geographic",
     )
+
     if image:
         z_results, ss_results = OK.execute("grid", x_array, y_array)
         plt.imshow(z_results, extent=[lon-lon_halfrange, lon+lon_halfrange, lat+lat_halfrange, lat-lat_halfrange], origin="upper") #the extent is not correct yet
@@ -86,4 +88,44 @@ def tec_kriging(lon, lat, lon_halfrange=45, lat_halfrange=22, image=False):
     x,y = geo_to_index(lon, lat)
     z1, ss1 = OK.execute("points", [x], [y])
     return z1
-print(tec_kriging(-180,89.5, image=True))
+
+
+
+def time_interpolation(lon:float, lat:float, sat_date:float, time_res:int=0)->float:
+    '''
+    Function to linearly interpolate between two TEC maps,
+    before and after the satellite's time, in order to stimate
+    the TEC at the satellite's time.
+
+    Parameters
+    ----------
+    lon: float
+        The satellite's longitude.
+    lat: float
+        The satellite's latitude.
+    sat_date: float
+        The date of the satellite's measurement.
+    time_res: float
+        The time difference between the two TEC maps (15min/2h).
+
+    Returns
+    -------
+    tec: float
+        The estimated altitude after TEC interpolation in time and position.
+
+    
+    '''
+
+    if time_res == 0: t = 15
+    elif time_res == 1: t = 120
+
+    gim1, gim2 = get_TEC(sat_date, time_res)[0]
+    
+    t_gim1 = split_time_date(get_TEC(sat_date, time_res)[1][0])[0]
+    sat_time = split_time_date(sat_date)[0]
+    sat_rel_time = sat_time[0]*60 + sat_time[1] - t_gim1[0]*60 - t_gim1[1]
+
+
+    tec = tec_kriging(lon, lat, gim1) + (tec_kriging(lon, lat, gim2) - tec_kriging(lon, lat, gim1)) * sat_rel_time / t
+
+    return tec
