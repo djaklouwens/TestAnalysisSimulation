@@ -4,16 +4,9 @@ from pykrige.ok import OrdinaryKriging
 import netCDF4 as nc
 from datetime import datetime
 import os
-from gim_tools import *
+import re
+from gim_tools import get_GIM, split_time_date
 
-time = 0    #must be smaller than 96
-# get the netcdf filepath
-fd = os.path.dirname(os.path.realpath('__file__'))
-fn = os.path.join(fd,'main\GIMs\jpli0750.17i.nc')
-
-# read the tecmap from the netcdf file
-ds = nc.Dataset(fn)
-tecmatrix =  ds['tecmap'][time,:]
 
 def tec(gim_matrix, x:int, y:int)->float:
     ''' Function to calculate Total Electron Content (TEC) given longitude (x) and latitude (y). '''
@@ -172,7 +165,6 @@ def tec_kriging(gim_matrix, lon: float, lat: float, lon_halfrange: int = 45, lat
         for j in range(len(y_array)):           
             z_array = np.append(z_array, tec(gim_matrix, x_array[i], y_array[j]))
     
-    print(x_array)
     lon_array, lat_array = index_to_geo(x_array, y_array)
     
     lon_dims = np.repeat(lon_array, len(lat_array))
@@ -183,7 +175,6 @@ def tec_kriging(gim_matrix, lon: float, lat: float, lon_halfrange: int = 45, lat
         print("lon_dims: ", lon_dims.size, "lat_dims: ", lat_dims.size, "z_array: ", z_array.size)
         return
 
-    print(lon_array)
     OK = OrdinaryKriging(
         lon_dims,
         lat_dims,
@@ -207,7 +198,7 @@ def tec_kriging(gim_matrix, lon: float, lat: float, lon_halfrange: int = 45, lat
     return z1
 
 
-print(tec_kriging(180,0, lon_halfrange=45, lat_halfrange=22, image=True, plot_variogram=True))
+#print(tec_kriging(180,0, lon_halfrange=45, lat_halfrange=22, image=True, plot_variogram=True))
 
 
 def time_interpolation(lon:float, lat:float, sat_date:float, time_res:int=0)->float:
@@ -234,18 +225,32 @@ def time_interpolation(lon:float, lat:float, sat_date:float, time_res:int=0)->fl
 
     
     '''
-
+    start = datetime.now()
     if time_res == 0: t = 15
     elif time_res == 1: t = 120
 
-    gim1, gim2 = get_GIM(sat_date, time_res)[0]
-    
-    t_gim1 = split_time_date(get_GIM(sat_date, time_res)[1][0])[0]
+    getGIM = get_GIM(sat_date, time_res)
+   
+    gim1, gim2 = getGIM[0]
+
+
     sat_time = split_time_date(sat_date)[0]
-    sat_rel_time = sat_time[0]*60 + sat_time[1] - t_gim1[0]*60 - t_gim1[1]
 
 
-    tec = tec_kriging(gim1, lon, lat) + (tec_kriging(gim2, lon, lat) - tec_kriging(gim1, lon, lat)) * sat_rel_time / t
+    gim1_time = [int(i) for i in re.split(r'[:.,]', getGIM[1][0])]
+    gim2_time = [int(i) for i in re.split(r'[:.,]', getGIM[1][1])]
+    print("sat_time: ", sat_time, "gim1_time: ", gim1_time, "gim2_time: ", gim2_time)
+    sat_rel_time = sat_time[0]*60 + sat_time[1] - gim1_time[0]*60 - gim1_time[1]
+    print("relative time difference between sat and gim1: ", sat_rel_time)
 
+    tec1 = tec_kriging(gim1, lon, lat)
+    tec2 = tec_kriging(gim2, lon, lat)
+    tec = tec1 + (tec2 - tec1) * sat_rel_time / t
+    end = datetime.now()
+    print("Runtime: ", end - start)
+    print("tec1: ", tec1, "tec2: ", tec2, "tec: ", tec)
     return tec
+
+
+print(time_interpolation(180,0, "00:07 16/03/2017"))
 
