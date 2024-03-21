@@ -35,22 +35,36 @@ def get_day_num(date:List)->int:
 
     return day
 
-def get_timeslot(time:List):
+def get_timeslot(time:List, time_res:int=0):
     ''' 
     Function to return the nearest time slot (of TEC map) for a given time.
-    If the time matches exactly with the 
+    If the time matches exactly with the time slot, only that timeslot is returned. 
+    If the time is in between 2 time slots, those 2 time slots are returned.
     
-
-    TODO: work for a time resolution
+    time_res: INT
+        Selected time resolution. 0 if 15 minute, 1 if 2 hour. By default, 
+        the 15min dataset is chosen.
+    
     '''
-    tim1 = 4*time[0] + time[1]//15 
-    tim2 = tim1 +1
+    if time_res == 0:
+        tim1 = 4*time[0] + time[1]//15 
+        tim2 = tim1 +1
+        if time[1]%15 == 0:
+            return tim1
 
-    if time[1]%15 == 0:
-        return tim1
+        if time[1]%15 != 0:
+            return np.array([tim1, tim2])
+    
+    if time_res == 1:
+        tim1 = time[0]//2
+        tim2 = tim1 +1
+        if time[0]%2 == 0:
+            return tim1
 
-    if time[1]%15 != 0:
-        return np.array([tim1, tim2])
+        if time[0]%2 != 0:
+            return np.array([tim1, tim2])
+
+   
 
 def download_file(url:str, save_dir:str=temp_dir, unzip:bool=False)->None:
     ''' 
@@ -86,6 +100,7 @@ def download_file(url:str, save_dir:str=temp_dir, unzip:bool=False)->None:
     if unzip:
         decompress(os.path.join(save_dir, filename), os.path.join(save_dir, os.path.splitext(filename)[0]))
         
+
 def decompress(infile:str, outfile:str)->None:
     ''' 
     Function to decompress a .gz file. Copied from:
@@ -104,7 +119,7 @@ def decompress(infile:str, outfile:str)->None:
     '''
     with gzip.open(infile, 'rb') as f_in, open(outfile, 'wb') as f_out:
         shutil.copyfileobj(f_in, f_out)
-        print(f'Decompressed {re.split(r'\\', infile)[-1]}!')
+        print('Decompressed ' + re.split(r"\\", infile)[-1] + '!')
 
 def construct_url(time_date:str, time_res:int=0, 
                   url_base:str=r'https://sideshow.jpl.nasa.gov/pub/iono_daily/gim_for_research/')->str:
@@ -159,18 +174,23 @@ def array_coord(lat, lon):
     column = lon + 179.5
     return (row, column)
 
-def get_time(timeslot:int, rtype='int'):
+def get_time(timeslot:int, rtype='str', time_res:int=0):
     '''
     Function that fetches the time for a given timeslot, and handles 
     both strings and arrays
     TODO: improve doc
-    TODO: allow ability with different time resolutions
     '''
-    tot_minutes = 15 * timeslot
-    hours = tot_minutes//60
-    minutes = tot_minutes - hours*60
+    if time_res == 0:
+        tot_minutes = 15 * timeslot
+        hours = tot_minutes//60
+        minutes = tot_minutes - hours*60
+    
+    if time_res == 1:
+        hours = 2 * timeslot
+        minutes = 0 
+        
 
-    if rtype=='int':
+    if rtype=='str':
         if not isinstance(timeslot, int):
             return [f'{hours[i]:>02}:{minutes[i]:>02}' for i in range(len(timeslot))]
         else:
@@ -222,10 +242,10 @@ def plot_TEC(tec_map, time_date, grid=True, save_fig=False, fpath=plot_dir,
         
         plt.savefig(os.path.join(fpath, fname), dpi=200)
 
-def get_TEC(time_date:str, time_res:int=0, plot:bool=False, del_temp:bool=True, 
+def get_GIM(time_date:str, time_res:int=0, plot:bool=False, del_temp:bool=True, 
             save_dir:str=temp_dir)->tuple:
     '''
-    Function to extract the worldwide TEC maps for a given day/time and 
+    Function to extract the worldwide JPL GIM TEC maps for a given day/time and 
     time resolution. If the exact time is not found, the nearest times 
     are returned.
 
@@ -273,22 +293,22 @@ def get_TEC(time_date:str, time_res:int=0, plot:bool=False, del_temp:bool=True,
     # open file, read file and close the file
     try:
         ds = nc.Dataset(file_path)
-        tec_maps = ds['tecmap'][timeslots, :].data
+        GIM_maps = ds['tecmap'][timeslots, :].data
     finally:
         ds.close()
 
     # plotting
     if plot:
         if isinstance(timeslots, int):
-            plot_TEC(tec_maps, times_str)
+            plot_TEC(GIM_maps, times_str)
         else:
-            plot_TEC(tec_maps[0], times_str[0])
+            plot_TEC(GIM_maps[0], times_str[0])
     
     # delete temporary directory if desired
     if del_temp:
-        shutil.rmtree(temp_dir)
+        shutil.rmtree(save_dir)
 
-    return tec_maps, times_str
+    return GIM_maps, times_str
 
 
 if __name__=='__main__':

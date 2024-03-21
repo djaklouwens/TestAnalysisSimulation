@@ -4,86 +4,248 @@ from pykrige.ok import OrdinaryKriging
 import netCDF4 as nc
 from datetime import datetime
 import os
+from gim_tools import *
 
 time = 0    #must be smaller than 96
 # get the netcdf filepath
 fd = os.path.dirname(os.path.realpath('__file__'))
-fn = os.path.join(fd,'GIMs\jpli0750.17i.nc')
+fn = os.path.join(fd,'main\GIMs\jpli0750.17i.nc')
 
 # read the tecmap from the netcdf file
 ds = nc.Dataset(fn)
 tecmatrix =  ds['tecmap'][time,:]
 
-def tec(x, y):
-   # y = y % 180
+def tec(gim_matrix, x:int, y:int)->float:
+    ''' Function to calculate Total Electron Content (TEC) given longitude (x) and latitude (y). '''
     x = x % 360
-   #  if y == 180:
-   #     y = 0
-    if x == 360:
-        x = 0
-    return tecmatrix[y, x]
+    if x == 360: x = 0
+    return gim_matrix[y, x]
 
-def geo_to_index(lon, lat, rounding=False):
-    # index [0,0] is the top left corner of the grid, corresponding to geo [-179.5, 89.5]
-    # convert from geocoordinates to indexcoordinates
-    if rounding:                                                       
-        x = round(lon + 179.5)
-        y = round(abs(lat - 89.5))
-        return x,y
-    if not rounding:
+def geo_to_index(lon: float, lat: float, rounding: bool = False) -> tuple:
+    ''' 
+    Function to convert geographic coordinates to index coordinates.
+    
+    Parameters
+    ----------
+    lon : float
+        Longitude coordinate.
+    lat : float
+        Latitude coordinate.
+    rounding : bool, optional
+        If True, the output index coordinates are rounded to integers. Default is False.
+    
+    Returns
+    -------
+    x, y : tuple
+        A tuple containing the index coordinates (x, y):
+        x : float or int
+            Index coordinate along the x-axis.
+        y : float or int
+            Index coordinate along the y-axis.
+    
+    Notes
+    -----
+    - Index [0,0] corresponds to the top left corner of the grid, with geographic coordinates [180.5, 89.5].
+    - For longitude (lon):
+        - If lon is in the range [180.5, 360], it's converted to index by subtracting 180.5.
+        - If lon is in the range [0, 180.5), it's converted by adding 179.5.
+        - Any other value of lon is considered out of range, and an error is printed.
+    - For latitude (lat):
+        - If lat is in the range [-90, 90], it's converted to index by subtracting from 89.5 and taking the absolute value.
+        - Any other value of lat is considered out of range, and an error is printed.
+    - If rounding is True, the output index coordinates are rounded to the nearest integer.
+    '''
+    if lon >= 180.5 and lon <= 360:
+        x = lon - 180.5
+    elif lon >= 0 and lon < 180.5:
         x = lon + 179.5
+    else:
+        print("Error: longitude (", lon, ") out of range")
+        return
+    
+    if lat >= -90 and lat <= 90:
         y = abs(lat - 89.5)
-        return x,y
+    else:
+        print("Error: latitude (", lat, ") out of range")
+        return
+       
+    if rounding:                                                       
+        x = int(x)
+        y = int(y)
+    
+    return x, y
 
+def index_to_geo(x: np.ndarray, y: np.ndarray) -> tuple:
+    ''' 
+    Function to convert index coordinates to geographic (spherical) coordinates.
+    
+    Parameters
+    ----------
+    x : numpy.ndarray
+        Array of x index coordinates.
+    y : numpy.ndarray
+        Array of y index coordinates.
+    
+    Returns
+    -------
+    lon, lat : tuple
+        A tuple containing two numpy arrays:
+        lon : numpy.ndarray
+            Array of longitude coordinates.
+        lat : numpy.ndarray
+            Array of latitude coordinates.
+    
+    Notes
+    -----
+    - Index [0,0] corresponds to the top left corner of the grid, with geographic coordinates [180.5, 89.5].
+    - For x coordinates:
+        - If x is in the range [-180, 179.5], it's directly converted to longitude by adding 180.5.
+        - If x is in the range (179.5, 539], it's converted by subtracting 179.5.
+        - Any other value of x is considered out of range, and an error is printed.
+    - For y coordinates:
+        - If y is in the range [0, 180], it's converted to latitude by subtracting from 89.5 and negating.
+        - Any other value of y is considered out of range, and an error is printed.
+    '''
+    lon = np.array([])
+    lat = np.array([])
+    
+    for xi in x:
+        if xi >= -180 and xi <= 179.5:
+            lon = np.append(lon, xi + 180.5)
+        elif xi > 179.5 and xi <= 539:
+            lon = np.append(lon, xi - 179.5)
+        else:
+            print("Error: x (", xi, ") out of range")
+            return
+        
+    for yi in y:
+        if yi >= 0 and yi <= 180:
+            lat = np.append(lat, -yi + 89.5)
+        else:
+            print("Error: y (", yi, ") out of range")
+            return
+    
+    return lon, lat
 
-def tec_kriging(lon, lat, lon_halfrange=45, lat_halfrange=22, image=False):
-    x,y = geo_to_index(lon, lat, rounding=True)
-    x_array = np.linspace(x-lon_halfrange, x+lon_halfrange, 2*lon_halfrange+1).astype(int)
-    y_array = np.linspace(y-lat_halfrange, y+lat_halfrange, 2*lat_halfrange+1).astype(int)
-    #mask = y_array >= 0 | y_array <= 159
-    #y_array = y_array[mask]
+def tec_kriging(gim_matrix, lon: float, lat: float, lon_halfrange: int = 45, lat_halfrange: int = 22, image: bool = False, plot_variogram: bool = False) -> float:
+    ''' 
+    Function to perform kriging interpolation of Total Electron Content (TEC) data.
+    
+    Parameters
+    ----------
+    lon : float
+        Longitude coordinate for the center of the interpolation window.
+    lat : float
+        Latitude coordinate for the center of the interpolation window.
+    lon_halfrange : int, optional
+        Half-range in the x-direction (longitude) for the interpolation window. Default is 45.
+    lat_halfrange : int, optional
+        Half-range in the y-direction (latitude) for the interpolation window. Default is 22.
+    image : bool, optional
+        If True, displays an image of the interpolated TEC values. Default is False.
+    plot_variogram : bool, optional
+        If True, plots the variogram. Default is False.
+    
+    Returns
+    -------
+    z1 : float
+        Interpolated TEC value at the specified longitude and latitude coordinates.
+    
+    Notes
+    -----
+    - Uses Ordinary Kriging interpolation technique to estimate TEC values.
+    - The interpolation window is centered at the specified longitude and latitude coordinates.
+    - The half-ranges specify the extent of the interpolation window in both longitude and latitude directions.
+    - If `image` is True, it displays the interpolated TEC values as an image plot.
+    - If `plot_variogram` is True, it plots the variogram.
+    '''
+    x, y = geo_to_index(lon, lat, rounding=True)
+    x_array = np.linspace(x - lon_halfrange, x + lon_halfrange, 2 * lon_halfrange + 1).astype(int)
+    y_array = np.linspace(y - lat_halfrange, y + lat_halfrange, 2 * lat_halfrange + 1).astype(int)
+    
     y_array = y_array[(159 >= y_array)]
     y_array = y_array[(y_array > 0)]
-    print(y_array)
-    print(y_array.max(), y_array.min())
+    
     z_array = np.array([])
     
     for i in range(len(x_array)):
-        for j in range(len(y_array)):
-            if y_array[j] > 159:
-                y_array = np.delete(y_array, j)
-            
-            if y_array[j] < 0:
-                print(y_array[j])
-                y_array = np.delete(y_array, j)
-               
-            else: z_array = np.append(z_array, tec(x_array[i], y_array[j]))
-            
-    x_dims = np.repeat(x_array, len(y_array))
-    y_dims = np.tile(y_array, len(x_array))
+        for j in range(len(y_array)):           
+            z_array = np.append(z_array, tec(gim_matrix, x_array[i], y_array[j]))
     
-    if(x_dims.size != y_dims.size or x_dims.size != z_array.size or y_dims.size != z_array.size):
-        print("Error: Array sizes do not match")
-        print("x_dims: ", x_dims.size, "y_dims: ", y_dims.size, "z_array: ", z_array.size)
+    print(x_array)
+    lon_array, lat_array = index_to_geo(x_array, y_array)
+    
+    lon_dims = np.repeat(lon_array, len(lat_array))
+    lat_dims = np.tile(lat_array, len(lon_array))
+    
+    if(lon_dims.size != lat_dims.size or lon_dims.size != z_array.size or lat_dims.size != z_array.size):
+        print("error: array sizes do not match")
+        print("lon_dims: ", lon_dims.size, "lat_dims: ", lat_dims.size, "z_array: ", z_array.size)
         return
 
+    print(lon_array)
     OK = OrdinaryKriging(
-        x_dims,
-        y_dims,
+        lon_dims,
+        lat_dims,
         z_array,
-        variogram_model="gaussian",
+
+        variogram_model="spherical",
         verbose=False,
-        enable_plotting=True,
-        nlags=10,
+        enable_plotting=plot_variogram,
+        nlags=75,
         coordinates_type="geographic",
     )
+
     if image:
-        z_results, ss_results = OK.execute("grid", x_array, y_array)
-        plt.imshow(z_results, extent=[lon-lon_halfrange, lon+lon_halfrange, lat+lat_halfrange, lat-lat_halfrange], origin="upper") #the extent is not correct yet
+        z_results, ss_results = OK.execute("grid", lon_array + 0.5, lat_array + 0.5)
+        plt.imshow(z_results, extent=[min(lon_array), max(lon_array), min(lat_array), max(lat_array)], origin="upper")
         plt.colorbar()
         plt.show()
-
-    x,y = geo_to_index(lon, lat)
-    z1, ss1 = OK.execute("points", [x], [y])
+        print(z_results)
+    
+    z1, ss1 = OK.execute("points", [lat], [lon])
     return z1
-print(tec_kriging(-180,89.5, image=True))
+
+
+print(tec_kriging(180,0, lon_halfrange=45, lat_halfrange=22, image=True, plot_variogram=True))
+
+
+def time_interpolation(lon:float, lat:float, sat_date:float, time_res:int=0)->float:
+    '''
+    Function to linearly interpolate between two TEC maps,
+    before and after the satellite's time, in order to stimate
+    the TEC at the satellite's time.
+
+    Parameters
+    ----------
+    lon: float
+        The satellite's longitude.
+    lat: float
+        The satellite's latitude.
+    sat_date: float
+        The date of the satellite's measurement.
+    time_res: float
+        The time difference between the two TEC maps (15min/2h).
+
+    Returns
+    -------
+    tec: float
+        The estimated altitude after TEC interpolation in time and position.
+
+    
+    '''
+
+    if time_res == 0: t = 15
+    elif time_res == 1: t = 120
+
+    gim1, gim2 = get_GIM(sat_date, time_res)[0]
+    
+    t_gim1 = split_time_date(get_GIM(sat_date, time_res)[1][0])[0]
+    sat_time = split_time_date(sat_date)[0]
+    sat_rel_time = sat_time[0]*60 + sat_time[1] - t_gim1[0]*60 - t_gim1[1]
+
+
+    tec = tec_kriging(gim1, lon, lat) + (tec_kriging(gim2, lon, lat) - tec_kriging(gim1, lon, lat)) * sat_rel_time / t
+
+    return tec
+
