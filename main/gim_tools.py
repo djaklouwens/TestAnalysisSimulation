@@ -49,19 +49,19 @@ def get_timeslot(time:List, time_res:int=0):
     if time_res == 0:
         tim1 = 4*time[0] + time[1]//15 
         tim2 = tim1 +1
+
         if time[1]%15 == 0:
             return tim1
-
-        if time[1]%15 != 0:
+        else:
             return np.array([tim1, tim2])
     
     if time_res == 1:
         tim1 = time[0]//2
         tim2 = tim1 +1
-        if time[0]%2 == 0:
-            return tim1
 
-        if time[0]%2 != 0:
+        if (time[0] + time[1]/60) %2 ==0:
+            return tim1
+        else:
             return np.array([tim1, tim2])
 
    
@@ -118,7 +118,7 @@ def decompress(infile:str, outfile:str)->None:
     '''
     with gzip.open(infile, 'rb') as f_in, open(outfile, 'wb') as f_out:
         shutil.copyfileobj(f_in, f_out)
-        print(f'Decompressed {re.split(r'\\', infile)[-1]}!')
+        print(f"Decompressed {re.split(r'\\', infile)[-1]}!")
 
 def construct_url(time_date:str, time_res:int=0, 
                   url_base:str=r'https://sideshow.jpl.nasa.gov/pub/iono_daily/gim_for_research/')->str:
@@ -186,7 +186,7 @@ def get_time(timeslot:int, rtype='str', time_res:int=0):
     
     if time_res == 1:
         hours = 2 * timeslot
-        minutes = 0 
+        minutes = 0 * timeslot
         
 
     if rtype=='str':
@@ -208,7 +208,7 @@ def no_iplot(func):
         plt.ion()
     return wrapper
 
-@no_iplot
+@no_iplot 
 def plot_TEC(tec_map, time_date, grid=True, save_fig=False, fpath=plot_dir, 
              fname='default'):
     lat_ = np.arange(-89.5, 89.6)
@@ -240,6 +240,7 @@ def plot_TEC(tec_map, time_date, grid=True, save_fig=False, fpath=plot_dir,
             fname = re.sub(illegal_char, '-', fname)
         
         plt.savefig(os.path.join(fpath, fname), dpi=200)
+    plt.show()
 
 def get_TEC(time_date:str, time_res:int=0, plot:bool=False, del_temp:bool=True, 
             save_dir:str=temp_dir)->tuple:
@@ -286,8 +287,8 @@ def get_TEC(time_date:str, time_res:int=0, plot:bool=False, del_temp:bool=True,
 
     # identify nearest timeslots (and associated times)
     og_time = split_time_date(time_date)[0]
-    timeslots = get_timeslot(og_time)
-    times_str = get_time(timeslots)
+    timeslots = get_timeslot(og_time, time_res)
+    times_str = get_time(timeslots, time_res=time_res)
 
     # open file, read file and close the file
     try:
@@ -312,4 +313,5 @@ def get_TEC(time_date:str, time_res:int=0, plot:bool=False, del_temp:bool=True,
 
 if __name__=='__main__':
     time_date = '13.20 04/03/2015'
+    print(get_TEC(time_date='10:30 22/12/2016', time_res=1, plot=True, del_temp=False))
     # TODO finish these few lines and test the code
