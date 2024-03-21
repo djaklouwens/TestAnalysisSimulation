@@ -100,6 +100,7 @@ def download_file(url:str, save_dir:str=temp_dir, unzip:bool=False)->None:
     if unzip:
         decompress(os.path.join(save_dir, filename), os.path.join(save_dir, os.path.splitext(filename)[0]))
         
+
 def decompress(infile:str, outfile:str)->None:
     ''' 
     Function to decompress a .gz file. Copied from:
@@ -118,7 +119,7 @@ def decompress(infile:str, outfile:str)->None:
     '''
     with gzip.open(infile, 'rb') as f_in, open(outfile, 'wb') as f_out:
         shutil.copyfileobj(f_in, f_out)
-        print(f'Decompressed {re.split(r"\\", infile)[-1]}!')
+        print('Decompressed ' + re.split(r"\\", infile)[-1] + '!')
 
 def construct_url(time_date:str, time_res:int=0, 
                   url_base:str=r'https://sideshow.jpl.nasa.gov/pub/iono_daily/gim_for_research/')->str:
@@ -241,9 +242,10 @@ def plot_TEC(tec_map, time_date, grid=True, save_fig=False, fpath=plot_dir,
         
         plt.savefig(os.path.join(fpath, fname), dpi=200)
 
-def get_TEC(time_date:str, time_res:int=0, plot:bool=False, save_dir:str=temp_dir)->tuple:
+def get_GIM(time_date:str, time_res:int=0, plot:bool=False, del_temp:bool=True, 
+            save_dir:str=temp_dir)->tuple:
     '''
-    Function to extract the worldwide TEC maps for a given day/time and 
+    Function to extract the worldwide JPL GIM TEC maps for a given day/time and 
     time resolution. If the exact time is not found, the nearest times 
     are returned.
 
@@ -256,6 +258,9 @@ def get_TEC(time_date:str, time_res:int=0, plot:bool=False, save_dir:str=temp_di
         the 15min dataset is chosen.
     plot : BOOL
         Decide if the TEC maps will be plotted (by default False)
+    del_temp : BOOL
+        Decide if the temp directory will be deleted after execution 
+        (by default True)
     save_dir : STR
         Specify the save directory of the downloaded and netCDF4 files.
         By default, a temporary directory.
@@ -270,21 +275,15 @@ def get_TEC(time_date:str, time_res:int=0, plot:bool=False, save_dir:str=temp_di
             TEC map
     '''
 
-    if not os.path.exists(save_dir):
-        os.mkdir(save_dir)
-
     # download the file
     url = construct_url(time_date, time_res)
-    # determine filename and filepath of .netCDF4 file
+    download_file(url, save_dir=save_dir, unzip=True)
+
+    # extract filename and filepath of .netCDF4 file
     fname = re.split(r'/', url)[-1]
     file_path = os.path.join(save_dir, os.path.splitext(fname)[0])
-
-    attempts = 0
-    while not os.path.isfile(file_path) and attempts < 5:
-        download_file(url, save_dir=save_dir, unzip=True)
-        attempts += 1
-
-    assert attempts <= 5, 'File incorrectly downloaded'
+    
+    assert os.path.isfile(file_path), 'File incorrectly downloaded'
 
     # identify nearest timeslots (and associated times)
     og_time = split_time_date(time_date)[0]
@@ -294,22 +293,22 @@ def get_TEC(time_date:str, time_res:int=0, plot:bool=False, save_dir:str=temp_di
     # open file, read file and close the file
     try:
         ds = nc.Dataset(file_path)
-        tec_maps = ds['tecmap'][timeslots, :].data
+        GIM_maps = ds['tecmap'][timeslots, :].data
     finally:
         ds.close()
 
     # plotting
     if plot:
         if isinstance(timeslots, int):
-            plot_TEC(tec_maps, times_str)
+            plot_TEC(GIM_maps, times_str)
         else:
-            plot_TEC(tec_maps[0], times_str[0])
+            plot_TEC(GIM_maps[0], times_str[0])
     
     # delete temporary directory if desired
-    # if del_temp: #TODO PABLO GUAPO CAMBIA ESTO <3
-    #     shutil.rmtree(save_dir)
+    if del_temp:
+        shutil.rmtree(save_dir)
 
-    return tec_maps, times_str
+    return GIM_maps, times_str
 
 
 if __name__=='__main__':
