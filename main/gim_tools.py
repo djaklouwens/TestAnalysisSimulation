@@ -100,6 +100,7 @@ def download_file(url:str, save_dir:str=temp_dir, unzip:bool=False)->None:
     if unzip:
         decompress(os.path.join(save_dir, filename), os.path.join(save_dir, os.path.splitext(filename)[0]))
         
+
 def decompress(infile:str, outfile:str)->None:
     ''' 
     Function to decompress a .gz file. Copied from:
@@ -118,7 +119,7 @@ def decompress(infile:str, outfile:str)->None:
     '''
     with gzip.open(infile, 'rb') as f_in, open(outfile, 'wb') as f_out:
         shutil.copyfileobj(f_in, f_out)
-        print(f'Decompressed {re.split(r'\\', infile)[-1]}!')
+        print('Decompressed ' + re.split(r"\\", infile)[-1] + '!')
 
 def construct_url(time_date:str, time_res:int=0, 
                   url_base:str=r'https://sideshow.jpl.nasa.gov/pub/iono_daily/gim_for_research/')->str:
