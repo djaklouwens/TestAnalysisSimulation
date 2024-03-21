@@ -242,10 +242,10 @@ def plot_TEC(tec_map, time_date, grid=True, save_fig=False, fpath=plot_dir,
         plt.savefig(os.path.join(fpath, fname), dpi=200)
     plt.show()
 
-def get_TEC(time_date:str, time_res:int=0, plot:bool=False, del_temp:bool=True, 
+def get_GIM(time_date:str, time_res:int=0, plot:bool=False, del_temp:bool=True, 
             save_dir:str=temp_dir)->tuple:
     '''
-    Function to extract the worldwide TEC maps for a given day/time and 
+    Function to extract the worldwide JPL GIM TEC maps for a given day/time and 
     time resolution. If the exact time is not found, the nearest times 
     are returned.
 
@@ -293,22 +293,22 @@ def get_TEC(time_date:str, time_res:int=0, plot:bool=False, del_temp:bool=True,
     # open file, read file and close the file
     try:
         ds = nc.Dataset(file_path)
-        tec_maps = ds['tecmap'][timeslots, :].data
+        GIM_maps = ds['tecmap'][timeslots, :].data
     finally:
         ds.close()
 
     # plotting
     if plot:
         if isinstance(timeslots, int):
-            plot_TEC(tec_maps, times_str)
+            plot_TEC(GIM_maps, times_str)
         else:
-            plot_TEC(tec_maps[0], times_str[0])
+            plot_TEC(GIM_maps[0], times_str[0])
     
     # delete temporary directory if desired
     if del_temp:
         shutil.rmtree(save_dir)
 
-    return tec_maps, times_str
+    return GIM_maps, times_str
 
 
 if __name__=='__main__':
