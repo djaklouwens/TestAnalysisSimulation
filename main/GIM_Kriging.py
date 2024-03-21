@@ -15,11 +15,11 @@ fn = os.path.join(fd,'main\GIMs\jpli0750.17i.nc')
 ds = nc.Dataset(fn)
 tecmatrix =  ds['tecmap'][time,:]
 
-def tec(x:int, y:int)->float:
+def tec(gim_matrix, x:int, y:int)->float:
     ''' Function to calculate Total Electron Content (TEC) given longitude (x) and latitude (y). '''
     x = x % 360
     if x == 360: x = 0
-    return tecmatrix[y, x]
+    return gim_matrix[y, x]
 
 def geo_to_index(lon: float, lat: float, rounding: bool = False) -> tuple:
     ''' 
@@ -127,7 +127,7 @@ def index_to_geo(x: np.ndarray, y: np.ndarray) -> tuple:
     
     return lon, lat
 
-def tec_kriging(lon: float, lat: float, lon_halfrange: int = 45, lat_halfrange: int = 22, image: bool = False, plot_variogram: bool = False) -> float:
+def tec_kriging(gim_matrix, lon: float, lat: float, lon_halfrange: int = 45, lat_halfrange: int = 22, image: bool = False, plot_variogram: bool = False) -> float:
     ''' 
     Function to perform kriging interpolation of Total Electron Content (TEC) data.
     
@@ -170,7 +170,7 @@ def tec_kriging(lon: float, lat: float, lon_halfrange: int = 45, lat_halfrange: 
     
     for i in range(len(x_array)):
         for j in range(len(y_array)):           
-            z_array = np.append(z_array, tec(x_array[i], y_array[j]))
+            z_array = np.append(z_array, tec(gim_matrix, x_array[i], y_array[j]))
     
     print(x_array)
     lon_array, lat_array = index_to_geo(x_array, y_array)
@@ -198,7 +198,7 @@ def tec_kriging(lon: float, lat: float, lon_halfrange: int = 45, lat_halfrange: 
 
     if image:
         z_results, ss_results = OK.execute("grid", lon_array + 0.5, lat_array + 0.5)
-        plt.imshow(z_results, extent=[min(lon_array), max(lon_array), min(lat_array), max(lat_array)], origin="upper")  # the extent is not correct yet
+        plt.imshow(z_results, extent=[min(lon_array), max(lon_array), min(lat_array), max(lat_array)], origin="upper")
         plt.colorbar()
         plt.show()
         print(z_results)
@@ -238,14 +238,14 @@ def time_interpolation(lon:float, lat:float, sat_date:float, time_res:int=0)->fl
     if time_res == 0: t = 15
     elif time_res == 1: t = 120
 
-    gim1, gim2 = get_TEC(sat_date, time_res)[0]
+    gim1, gim2 = get_GIM(sat_date, time_res)[0]
     
-    t_gim1 = split_time_date(get_TEC(sat_date, time_res)[1][0])[0]
+    t_gim1 = split_time_date(get_GIM(sat_date, time_res)[1][0])[0]
     sat_time = split_time_date(sat_date)[0]
     sat_rel_time = sat_time[0]*60 + sat_time[1] - t_gim1[0]*60 - t_gim1[1]
 
 
-    tec = tec_kriging(lon, lat, gim1) + (tec_kriging(lon, lat, gim2) - tec_kriging(lon, lat, gim1)) * sat_rel_time / t
+    tec = tec_kriging(gim1, lon, lat) + (tec_kriging(gim2, lon, lat) - tec_kriging(gim1, lon, lat)) * sat_rel_time / t
 
     return tec
 
