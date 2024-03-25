@@ -118,7 +118,7 @@ def decompress(infile:str, outfile:str)->None:
     '''
     with gzip.open(infile, 'rb') as f_in, open(outfile, 'wb') as f_out:
         shutil.copyfileobj(f_in, f_out)
-        print("Decompressed"+ re.split(r'\\', infile)[-1] + "!")
+        print(f"Decompressed {re.split(r'\\', infile)[-1]}!")
 
 def construct_url(time_date:str, time_res:int=0, 
                   url_base:str=r'https://sideshow.jpl.nasa.gov/pub/iono_daily/gim_for_research/')->str:
@@ -339,9 +339,36 @@ def spherical_to_cartesian(lat, lon, rad=False):
 def get_coord_around_pt(c_lat:float, c_lon:float,
                         R_tspot:float, lat_array:np.ndarray = np.arange(-89.5, 89.5+1, 1), lon_array:np.ndarray = np.arange(-179.5, 179.5+1, 1),  R_earth:float=6378, plot:bool=False, ax=None):
     '''
-    Function 
-    TODO:DOCS
+    Function that, for a given array of existing latitude and longitude coordinates, 
+    determines the subset of coordinates that are within a particular ditance from 
+    a central coordinate.
     
+    Parameters
+    ----------
+    lat_array: np.ndarray
+        Numpy array (1D) of existing latitude coordinates.
+    lon_array: np.ndarray
+        Numpy array (1D) of existing longitude coordinates.
+    c_lat: float
+        Latitude coordinate of centre coordinate.
+    c_lon: float
+        Longitude coordinate of centre coordinate.
+    R_tspot: float
+        Largest acceptable distance from centre point, in Km. Translates to radius 
+        of target spot.
+    R_earth: float (assumed 6378 Km)
+        Radius of the Earth, assumed constant.
+    plot: bool (False by default)
+        Determine whether to plot the target spot in a world map.
+    ax: matplotlib axes object (None by default)
+        Pass the axes on which to plot the target spot. Only useful if
+        bool is set to True. If not provided, a new axes is generated.
+    
+    Returns
+    -------
+    tlat, tlon : np.ndarray
+        Existing latitude and longitude coordinates that are within R_tspot 
+        distance from the centre coordinate. Both are one-dimensional arrarys.    
     '''
     gamma = R_tspot / R_earth # characteristic angle of cone, in radians
 
@@ -378,7 +405,7 @@ def get_coord_around_pt(c_lat:float, c_lon:float,
 
 if __name__=='__main__':
     time_date = '13.20 04/03/2015'
-    # print(get_TEC(time_date='10:30 22/12/2016', time_res=1, plot=True, del_temp=False))
+    print(get_GIM(time_date='10:30 22/12/2016', time_res=1, plot=True, del_temp=False))
     # TODO finish these few lines and test the code
 
 
