@@ -6,6 +6,7 @@ from datetime import datetime
 import os
 import re
 from gim_tools import get_GIM, split_time_date
+import multiprocessing
 
 
 def tec(gim_matrix, x:int, y:int)->float:
@@ -58,11 +59,7 @@ def geo_to_index(lon: float, lat: float, rounding: bool = False) -> tuple:
     
     if lat >= -90 and lat <= 90:
         y = abs(lat - 89.5)
-    else:
-        print("Error: latitude (", lat, ") out of range")
-        return
-       
-    if rounding:                                                       
+                                               
         x = int(x)
         y = int(y)
     
@@ -175,12 +172,13 @@ def tec_kriging(gim_matrix, lon: float, lat: float, lon_halfrange: int = 45, lat
         print("lon_dims: ", lon_dims.size, "lat_dims: ", lat_dims.size, "z_array: ", z_array.size)
         return
 
+   # print(lon_dims.size, lat_dims.size, z_array.size)
     OK = OrdinaryKriging(
         lon_dims,
         lat_dims,
         z_array,
 
-        variogram_model="spherical",
+        variogram_model="exponential",
         verbose=False,
         enable_plotting=plot_variogram,
         nlags=75,
@@ -230,27 +228,46 @@ def time_interpolation(lon:float, lat:float, sat_date:float, time_res:int=0)->fl
     elif time_res == 1: t = 120
 
     getGIM = get_GIM(sat_date, time_res)
-   
+    gimtime = datetime.now() - start
+    print("GIM download time; " , gimtime)
     gim1, gim2 = getGIM[0]
 
 
     sat_time = split_time_date(sat_date)[0]
-
-
     gim1_time = [int(i) for i in re.split(r'[:.,]', getGIM[1][0])]
     gim2_time = [int(i) for i in re.split(r'[:.,]', getGIM[1][1])]
+    
     print("sat_time: ", sat_time, "gim1_time: ", gim1_time, "gim2_time: ", gim2_time)
     sat_rel_time = sat_time[0]*60 + sat_time[1] - gim1_time[0]*60 - gim1_time[1]
     print("relative time difference between sat and gim1: ", sat_rel_time)
-
-    tec1 = tec_kriging(gim1, lon, lat)
-    tec2 = tec_kriging(gim2, lon, lat)
+    lonhalf= 20
+    lathalf= 10
+    
+    tec1 = tec_kriging(gim1, lon, lat, lon_halfrange=lonhalf, lat_halfrange=lathalf, image=False, plot_variogram=False)
+    tec2 = tec_kriging(gim2, lon, lat, lon_halfrange=lonhalf, lat_halfrange=lathalf, image=False)
     tec = tec1 + (tec2 - tec1) * sat_rel_time / t
     end = datetime.now()
-    print("Runtime: ", end - start)
+    print("Module Runtime: ", end - start)
     print("tec1: ", tec1, "tec2: ", tec2, "tec: ", tec)
     return tec
 
 
-print(time_interpolation(180,0, "00:07 16/03/2017"))
+def parallel_interpolation(lon_list, lat_list, sat_date_list):
+    points_data = zip(lon_list, lat_list, sat_date_list)
+    with multiprocessing.Pool() as pool:
+        tec_results = pool.starmap(time_interpolation, points_data)
+    return tec_results 
+
+if __name__ == '__main__':
+    startp = datetime.now()
+    lon_list = [0, 45, 90, 135, 180, 225, 270, 315, 360]
+    lat_list = [-90, -45, 0, 45, 90, -90, -45, 0, 45]
+    sat_date_list = ["00:07 16/03/2017", "00:08 16/03/2017", "00:09 16/03/2017", "00:10 16/03/2017", "00:11 16/03/2017", "00:12 16/03/2017", "00:13 16/03/2017","00:14 16/03/2017","00:16 16/03/2017"]
+    endp = datetime.now()
+    pi = parallel_interpolation(lon_list, lat_list, sat_date_list)
+    print("Parallel Runtime: ", endp - startp)
+
+    print(pi)
+
+    #print(time_interpolation(180,0, "00:07 16/03/2017"))
 
