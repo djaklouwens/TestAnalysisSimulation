@@ -117,7 +117,7 @@ def index_to_geo(x: np.ndarray, y: np.ndarray) -> tuple:
     
     return lon, lat
 
-def tec_kriging(gim_matrix, lon: float, lat: float, lon_halfrange: int = 45, lat_halfrange: int = 22, image: bool = False, plot_variogram: bool = False) -> float:
+def tec_kriging(gim_matrix, lon: float, lat: int, image: bool = False, plot_variogram: bool = False) -> float:
     ''' 
     Function to perform kriging interpolation of Total Electron Content (TEC) data.
     
@@ -149,23 +149,37 @@ def tec_kriging(gim_matrix, lon: float, lat: float, lon_halfrange: int = 45, lat
     - If `image` is True, it displays the interpolated TEC values as an image plot.
     - If `plot_variogram` is True, it plots the variogram.
     '''
-    x, y = geo_to_index(lon, lat, rounding=True)
-    x_array = np.linspace(x - lon_halfrange, x + lon_halfrange, 2 * lon_halfrange + 1).astype(int)
-    y_array = np.linspace(y - lat_halfrange, y + lat_halfrange, 2 * lat_halfrange + 1).astype(int)
+    # x, y = geo_to_index(lon, lat, rounding=True)
+
+    # if lat < lat_limit:
+
+    #     x_array = np.linspace(x - lon_halfrange, x + lon_halfrange, 2 * lon_halfrange + 1).astype(int)
+    #     y_array = np.linspace(y - lat_halfrange, y + lat_halfrange, 2 * lat_halfrange + 1).astype(int)
     
-    y_array = y_array[(159 >= y_array)]
-    y_array = y_array[(y_array > 0)]
+    # elif lat >= lat_limit:
+    #     x_array = np.linspace(0, 359, 360).astype(int)
+    #     if y < 90:
+    #         y_array = np.linspace(0, y + lat_margin, y + 1).astype(int)
+    #     elif y >= 90:
+    #         y_array = np.linspace(y - lat_margin, 179, 180 - y).astype(int)
+
+
+    # y_array = y_array[(159 >= y_array)]
+    # y_array = y_array[(y_array > 0)]
+
+    print(get_coord_around_pt(0, 0, R_tspot=1200))
     
+    y_array, x_array = get_coord_around_pt(lat, lon, R_tspot=1200)
+    x_array += 179.5
+    x_array = x_array.astype(int)
+    y_array = abs(y_array - 89.5)
+    y_array = y_array.astype(int)
     z_array = np.array([])
     
-    for i in range(len(x_array)):
-        for j in range(len(y_array)):           
-            z_array = np.append(z_array, tec(gim_matrix, x_array[i], y_array[j]))
+    for i in range(len(x_array)):         
+            z_array = np.append(z_array, tec(gim_matrix, x_array[i], y_array[i]))
     
-    lon_array, lat_array = index_to_geo(x_array, y_array)
-    
-    lon_dims = np.repeat(lon_array, len(lat_array))
-    lat_dims = np.tile(lat_array, len(lon_array))
+    lon_dims, lat_dims = index_to_geo(x_array, y_array)
     
     if(lon_dims.size != lat_dims.size or lon_dims.size != z_array.size or lat_dims.size != z_array.size):
         print("error: array sizes do not match")
@@ -199,7 +213,7 @@ def tec_kriging(gim_matrix, lon: float, lat: float, lon_halfrange: int = 45, lat
 #print(tec_kriging(180,0, lon_halfrange=45, lat_halfrange=22, image=True, plot_variogram=True))
 
 
-def time_interpolation(lon:float, lat:float, sat_date:float, time_res:int=0)->float:
+def time_interpolation(lon: float, lat: float, sat_date: float, time_res: int = 0)->float:
     '''
     Function to linearly interpolate between two TEC maps,
     before and after the satellite's time, in order to stimate
@@ -240,11 +254,10 @@ def time_interpolation(lon:float, lat:float, sat_date:float, time_res:int=0)->fl
     print("sat_time: ", sat_time, "gim1_time: ", gim1_time, "gim2_time: ", gim2_time)
     sat_rel_time = sat_time[0]*60 + sat_time[1] - gim1_time[0]*60 - gim1_time[1]
     print("relative time difference between sat and gim1: ", sat_rel_time)
-    lonhalf= 20
-    lathalf= 10
-    
-    tec1 = tec_kriging(gim1, lon, lat, lon_halfrange=lonhalf, lat_halfrange=lathalf, image=False, plot_variogram=False)
-    tec2 = tec_kriging(gim2, lon, lat, lon_halfrange=lonhalf, lat_halfrange=lathalf, image=False)
+
+    tec1 = tec_kriging(gim1, lon, lat)
+    print(tec1)
+    tec2 = tec_kriging(gim2, lon, lat)
     tec = tec1 + (tec2 - tec1) * sat_rel_time / t
     end = datetime.now()
     print("Module Runtime: ", end - start)

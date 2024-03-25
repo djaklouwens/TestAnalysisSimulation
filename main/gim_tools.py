@@ -118,8 +118,7 @@ def decompress(infile:str, outfile:str)->None:
     '''
     with gzip.open(infile, 'rb') as f_in, open(outfile, 'wb') as f_out:
         shutil.copyfileobj(f_in, f_out)
-        #print(f"Decompressed {re.split(r'\\', infile)[-1]}!")              <<<<    This line throws an error on Python 3.11 or less
-        print('Decompressed ' + re.split(r"\\", infile)[-1] + '!')  ##      <<<< Splitting the fstirng like this works on Python 3.11 or less
+        print(f"Decompressed {re.split(r'\\', infile)[-1]}!")
 
 def construct_url(time_date:str, time_res:int=0, 
                   url_base:str=r'https://sideshow.jpl.nasa.gov/pub/iono_daily/gim_for_research/')->str:
@@ -337,11 +336,8 @@ def spherical_to_cartesian(lat, lon, rad=False):
         lon = np.deg2rad(lon)
     return np.cos(lat)*np.cos(lon), np.cos(lat)*np.sin(lon), np.sin(lat)
 
-
-
-@no_iplot
-def get_coord_around_pt(lat_array:np.ndarray, lon_array:np.ndarray, c_lat:float, c_lon:float,
-                        R_tspot:float, R_earth:float=6378, plot:bool=False, ax=None):
+def get_coord_around_pt(c_lat:float, c_lon:float,
+                        R_tspot:float, lat_array:np.ndarray = np.arange(-89.5, 89.5+1, 1), lon_array:np.ndarray = np.arange(-179.5, 179.5+1, 1),  R_earth:float=6378, plot:bool=False, ax=None):
     '''
     Function that, for a given array of existing latitude and longitude coordinates, 
     determines the subset of coordinates that are within a particular ditance from 
@@ -411,3 +407,5 @@ if __name__=='__main__':
     time_date = '13.20 04/03/2015'
     print(get_GIM(time_date='10:30 22/12/2016', time_res=1, plot=True, del_temp=False))
     # TODO finish these few lines and test the code
+
+
