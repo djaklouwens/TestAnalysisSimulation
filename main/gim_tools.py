@@ -311,7 +311,75 @@ def get_GIM(time_date:str, time_res:int=0, plot:bool=False, del_temp:bool=True,
     return GIM_maps, times_str
 
 
+def spherical_to_cartesian(lat, lon, rad=False):
+    '''
+    Function to convert latitude and longitude coordinates into cartesian coordinate.
+    
+    Parameters
+    ----------
+    lat: float or ndarray
+        Latitude angle(s)
+    lon: float or ndarray
+        Longitude angle(s)
+    rad: bool (default: False)
+        Indicate whether the specified angles are in radians.
+    
+    Returns
+    -------
+    (float, float, float) or (ndarray, ndarray, ndarray)
+        Returns the x, y and z components of a unit vector in the direction of the latitude
+        and longitude coordinate.
+    
+    '''
+    if not rad:
+        lat = np.deg2rad(lat)
+        lon = np.deg2rad(lon)
+    return np.cos(lat)*np.cos(lon), np.cos(lat)*np.sin(lon), np.sin(lat)
+
+
+
+@no_iplot
+def get_coord_around_pt(lat_array:np.ndarray, lon_array:np.ndarray, c_lat:float, c_lon:float,
+                        R_tspot:float, R_earth:float=6378, plot:bool=False, ax=None):
+    '''
+    Function 
+    TODO:DOCS
+    
+    '''
+    gamma = R_tspot / R_earth # characteristic angle of cone, in radians
+
+    lon, lat = np.meshgrid(lon_array, lat_array)
+
+    c_vec = np.array(spherical_to_cartesian(c_lat, c_lon))
+    u = np.array(spherical_to_cartesian(lat, lon))
+    u = np.rollaxis(u, 0, 3)
+
+    angles = np.arccos(np.inner(u, c_vec))
+    condition = angles < gamma
+    tlat = lat[condition]
+    tlon = lon[condition]
+    
+    if plot:
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(14, 8))
+            earth = Basemap()
+    
+        grid_style = {'linewidth': 0.2, 'dashes':[1,0], 'labels':[1, 1, 1, 1], 'labelstyle':'+/-'}
+        earth.drawcoastlines(color='#555566', linewidth=1, ax=ax)
+        # earth.plot(lon.reshape(-1), lat.reshape(-1), 'k.', alpha=0.5 ,latlon=True, ax=ax)
+        arg_order = np.argsort(tlon)
+
+        earth.plot(tlon[arg_order], tlat[arg_order], 'g.', latlon=True, ax=ax, alpha=0.6)
+        earth.plot(c_lon, c_lat, 'ro', latlon=True, ax=ax)
+                
+        earth.drawmeridians(np.arange(-180, 181, 20), **grid_style, ax=ax)
+        earth.drawparallels(np.arange(-90, 91, 30), **grid_style, ax=ax)
+  
+    return tlat, tlon
+
+
+
 if __name__=='__main__':
     time_date = '13.20 04/03/2015'
-    print(get_TEC(time_date='10:30 22/12/2016', time_res=1, plot=True, del_temp=False))
+    # print(get_TEC(time_date='10:30 22/12/2016', time_res=1, plot=True, del_temp=False))
     # TODO finish these few lines and test the code
