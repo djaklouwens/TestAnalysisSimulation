@@ -6,14 +6,13 @@ import pickle
 from statsmodels.tsa.arima_model import ARIMA
 from statsmodels.tsa.holtwinters import SimpleExpSmoothing, Holt
 from sklearn.metrics import mean_squared_error
+import os
 
 # Load data
 from netCDF4 import Dataset
-
+nc = os.path.dirname(os.path.realpath('j3_no_iono_2021_30s.nc'))
 # Load NetCDF data
-nc_file = '/Users/carlijnvanderweijst/Desktop/LR/Project Q3 - 2024/j3_no_iono_2021_30s.nc'
-nc_data = Dataset(nc_file, 'r')
-print(nc_data.variables.keys())
+nc_data = Dataset(nc, 'r')
 
 # Read variables from the NetCDF file
 time = nc_data.variables['time'][:]
