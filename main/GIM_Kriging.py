@@ -5,7 +5,7 @@ import netCDF4 as nc
 from datetime import datetime
 import os
 import re
-from gim_tools import get_GIM, split_time_date
+from gim_tools import get_GIM, split_time_date, get_coord_around_pt
 import multiprocessing
 
 
@@ -277,10 +277,10 @@ if __name__ == '__main__':
     lat_list = [-90, -45, 0, 45, 90, -90, -45, 0, 45]
     sat_date_list = ["00:07 16/03/2017", "00:08 16/03/2017", "00:09 16/03/2017", "00:10 16/03/2017", "00:11 16/03/2017", "00:12 16/03/2017", "00:13 16/03/2017","00:14 16/03/2017","00:16 16/03/2017"]
     endp = datetime.now()
-    pi = parallel_interpolation(lon_list, lat_list, sat_date_list)
+    #pi = parallel_interpolation(lon_list, lat_list, sat_date_list)
     print("Parallel Runtime: ", endp - startp)
 
-    print(pi)
+    #print(pi)
 
-    #print(time_interpolation(180,0, "00:07 16/03/2017"))
+    print(time_interpolation(300,0, "00:07 16/03/2017"))
 

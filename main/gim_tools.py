@@ -83,7 +83,6 @@ def download_file(url:str, save_dir:str=temp_dir, unzip:bool=False)->None:
     None
     '''
    
-    # download file
     response = requests.get(url)
     
     if "content-disposition" in response.headers:
@@ -95,7 +94,6 @@ def download_file(url:str, save_dir:str=temp_dir, unzip:bool=False)->None:
     with open(os.path.join(save_dir, filename), mode="wb") as file:
         file.write(response.content)
 
-    print(f"Downloaded {filename}!")
 
     if unzip:
         decompress(os.path.join(save_dir, filename), os.path.join(save_dir, os.path.splitext(filename)[0]))
@@ -118,7 +116,7 @@ def decompress(infile:str, outfile:str)->None:
     '''
     with gzip.open(infile, 'rb') as f_in, open(outfile, 'wb') as f_out:
         shutil.copyfileobj(f_in, f_out)
-        print(f"Decompressed {re.split(r'\\', infile)[-1]}!")
+        print("Downloaded and decompressed: " + re.split(r'\\', infile)[-1])
 
 def construct_url(time_date:str, time_res:int=0, 
                   url_base:str=r'https://sideshow.jpl.nasa.gov/pub/iono_daily/gim_for_research/')->str:
@@ -242,6 +240,8 @@ def plot_TEC(tec_map, time_date, grid=True, save_fig=False, fpath=plot_dir,
         plt.savefig(os.path.join(fpath, fname), dpi=200)
     plt.show()
 
+
+
 def get_GIM(time_date:str, time_res:int=0, plot:bool=False, del_temp:bool=True, 
             save_dir:str=temp_dir)->tuple:
     '''
@@ -275,15 +275,20 @@ def get_GIM(time_date:str, time_res:int=0, plot:bool=False, del_temp:bool=True,
             TEC map
     '''
 
-    # download the file
-    url = construct_url(time_date, time_res)
-    download_file(url, save_dir=save_dir, unzip=True)
+   
+    
+    
 
-    # extract filename and filepath of .netCDF4 file
+    # construct url and extract filename and filepath of .netCDF4 file
+    url = construct_url(time_date, time_res)
     fname = re.split(r'/', url)[-1]
     file_path = os.path.join(save_dir, os.path.splitext(fname)[0])
-    
-    assert os.path.isfile(file_path), 'File incorrectly downloaded'
+
+
+    # download the file if it does not exist yet
+    if not os.path.isfile(file_path):
+        download_file(url, save_dir=save_dir, unzip=True)
+        assert os.path.isfile(file_path), 'File incorrectly downloaded'
 
     # identify nearest timeslots (and associated times)
     og_time = split_time_date(time_date)[0]
@@ -309,6 +314,25 @@ def get_GIM(time_date:str, time_res:int=0, plot:bool=False, del_temp:bool=True,
         shutil.rmtree(save_dir)
 
     return GIM_maps, times_str
+
+def save_GIMs(times_dates:list, time_res:int=0,
+            save_dir:str=temp_dir)->tuple:
+    
+    for time_date in times_dates:
+    # construct url and extract filename and filepath of .netCDF4 file
+        url = construct_url(time_date, time_res)
+        fname = re.split(r'/', url)[-1]
+        file_path = os.path.join(save_dir, os.path.splitext(fname)[0])
+
+    # download the file if it does not exist yet
+        if not os.path.isfile(file_path):
+            #print(f"Downloading {fname}...")
+            download_file(url, save_dir=save_dir, unzip=True)
+            assert os.path.isfile(file_path), 'File incorrectly downloaded'
+    print("All neccessary source GIMs availible for interpolation!")
+
+
+
 
 
 def spherical_to_cartesian(lat, lon, rad=False):
@@ -337,7 +361,7 @@ def spherical_to_cartesian(lat, lon, rad=False):
     return np.cos(lat)*np.cos(lon), np.cos(lat)*np.sin(lon), np.sin(lat)
 
 def get_coord_around_pt(c_lat:float, c_lon:float,
-                        R_tspot:float, lat_array:np.ndarray = np.arange(-89.5, 89.5+1, 1), lon_array:np.ndarray = np.arange(-179.5, 179.5+1, 1),  R_earth:float=6378, plot:bool=False, ax=None):
+                        R_tspot:float, max_size=1000, lat_array:np.ndarray = np.arange(-89.5, 89.5+1, 1), lon_array:np.ndarray = np.arange(-179.5, 179.5+1, 1),  R_earth:float=6378, plot:bool=False, ax=None):
     '''
     Function that, for a given array of existing latitude and longitude coordinates, 
     determines the subset of coordinates that are within a particular ditance from 
@@ -382,7 +406,14 @@ def get_coord_around_pt(c_lat:float, c_lon:float,
     condition = angles < gamma
     tlat = lat[condition]
     tlon = lon[condition]
-    
+ 
+    #remove elements if array is too big
+    if tlon.size > max_size:
+        remove_indeces = sorted(np.random.choice(len(tlon), tlon.size-max_size, replace=False), reverse=True)
+        for i in remove_indeces:
+            tlon = np.delete(tlon, i)
+            tlat = np.delete(tlat, i)
+    #print(tlon.size)
     if plot:
         if ax is None:
             fig, ax = plt.subplots(figsize=(14, 8))
@@ -390,7 +421,7 @@ def get_coord_around_pt(c_lat:float, c_lon:float,
     
         grid_style = {'linewidth': 0.2, 'dashes':[1,0], 'labels':[1, 1, 1, 1], 'labelstyle':'+/-'}
         earth.drawcoastlines(color='#555566', linewidth=1, ax=ax)
-        # earth.plot(lon.reshape(-1), lat.reshape(-1), 'k.', alpha=0.5 ,latlon=True, ax=ax)
+        #earth.plot(lon.reshape(-1), lat.reshape(-1), 'k.', alpha=0.5 ,latlon=True, ax=ax)
         arg_order = np.argsort(tlon)
 
         earth.plot(tlon[arg_order], tlat[arg_order], 'g.', latlon=True, ax=ax, alpha=0.6)
@@ -398,6 +429,7 @@ def get_coord_around_pt(c_lat:float, c_lon:float,
                 
         earth.drawmeridians(np.arange(-180, 181, 20), **grid_style, ax=ax)
         earth.drawparallels(np.arange(-90, 91, 30), **grid_style, ax=ax)
+        plt.show()
   
     return tlat, tlon
 
@@ -405,7 +437,8 @@ def get_coord_around_pt(c_lat:float, c_lon:float,
 
 if __name__=='__main__':
     time_date = '13.20 04/03/2015'
-    print(get_GIM(time_date='10:30 22/12/2016', time_res=1, plot=True, del_temp=False))
+   # print(get_GIM(time_date='10:30 22/12/2016', time_res=1, plot=True, del_temp=False))
+    get_coord_around_pt(91, 0, 1200, plot=True)
     # TODO finish these few lines and test the code
-
+  #  shutil.rmtree(temp_dir)
 

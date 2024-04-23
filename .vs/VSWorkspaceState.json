@@ -1,7 +1,10 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\main",
+    "\\main\\plots",
+    "\\main\\temp"
   ],
-  "SelectedNode": "\\README.md",
+  "SelectedNode": "\\main\\gim_tools.py",
   "PreviewInSolutionExplorer": false
 }
