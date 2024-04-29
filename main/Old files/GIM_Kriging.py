@@ -242,6 +242,7 @@ def time_interpolation(lon: float, lat: float, sat_date: float, time_res: int = 
     elif time_res == 1: t = 120
 
     getGIM = get_GIM(sat_date, time_res)
+    print("GIM: ", getGIM)
     gimtime = datetime.now() - start
     print("GIM download time; " , gimtime)
     gim1, gim2 = getGIM[0]

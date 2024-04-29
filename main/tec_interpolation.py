@@ -168,18 +168,26 @@ def time_interpolation(lon: float, lat: float, sat_date: float, time_res: int = 
 
     getGIM = get_GIM(sat_date, time_res, del_temp = del_temp)
 
-    gim1, gim2 = getGIM[0]
+    if getGIM[0].ndim == 3:
+        gim1, gim2 = getGIM[0]
 
+        sat_time = split_time_date(sat_date)[0]
+        gim1_time = [int(i) for i in re.split(r'[:.,]', getGIM[1][0])]
+        gim2_time = [int(i) for i in re.split(r'[:.,]', getGIM[1][1])]
 
-    sat_time = split_time_date(sat_date)[0]
-    gim1_time = [int(i) for i in re.split(r'[:.,]', getGIM[1][0])]
-    gim2_time = [int(i) for i in re.split(r'[:.,]', getGIM[1][1])]
+        sat_rel_time = sat_time[0]*60 + sat_time[1] - gim1_time[0]*60 - gim1_time[1]
 
-    sat_rel_time = sat_time[0]*60 + sat_time[1] - gim1_time[0]*60 - gim1_time[1]
+        tec1 = tec_kriging(gim1, lon, lat)
+        tec2 = tec_kriging(gim2, lon, lat)
+        tec = tec1 + (tec2 - tec1) * sat_rel_time / t
 
-    tec1 = tec_kriging(gim1, lon, lat)
-    tec2 = tec_kriging(gim2, lon, lat)
-    tec = tec1 + (tec2 - tec1) * sat_rel_time / t
+    elif getGIM[0].ndim == 2:
+        gim1 = getGIM[0]
+        tec = tec_kriging(gim1, lon, lat)
+
+    else:
+        print("Error: GIM dimension not recognized")
+        return
 
     return tec
 

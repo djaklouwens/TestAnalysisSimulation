@@ -275,10 +275,6 @@ def get_GIM(time_date:str, time_res:int=0, plot:bool=False, del_temp:bool=True,
             TEC map
     '''
 
-   
-    
-    
-
     # construct url and extract filename and filepath of .netCDF4 file
     url = construct_url(time_date, time_res)
     fname = re.split(r'/', url)[-1]

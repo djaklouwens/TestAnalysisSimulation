@@ -9,7 +9,7 @@ time = 0    #must be smaller than 96
 
 # get the netcdf filepath
 fd = os.path.dirname(os.path.realpath('__file__'))
-fn = os.path.join(fd,'GIMs\jpli0750.17i.nc')
+fn = os.path.join(fd,'GIMs\\jpli0750.17i.nc')
 
 # read the tecmap from the netcdf file
 ds = nc.Dataset(fn)
