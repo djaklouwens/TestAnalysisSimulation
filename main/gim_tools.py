@@ -19,7 +19,7 @@ def isleap(year:int)->bool:
     else:           # Julian Calendar
         return (year % 4 == 0)
 
-def get_day_num(date:List)->int:
+def get_day_num(date:list)->int:
     ''' Function to get the number of days since the first of January of that year '''
 
     # initialise days of month
@@ -34,6 +34,22 @@ def get_day_num(date:List)->int:
     day += date[0]
 
     return day
+
+def inv_day_number(day:int, year:int):
+    ''' Function to get the date from the day number of the year '''
+
+    months = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 0]
+    if isleap(year): months[1] = 29
+
+    for i in range(len(months)):
+        if day > 0:
+            day -= months[i]
+        else:
+            break
+    
+    date = [day + months[i-1], i, year]
+
+    return date
 
 def get_timeslot(time:List, time_res:int=0):
     ''' 
