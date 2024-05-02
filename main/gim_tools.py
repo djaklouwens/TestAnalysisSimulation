@@ -35,6 +35,22 @@ def get_day_num(date:List)->int:
 
     return day
 
+def inv_day_number(day:int, year:int):
+    ''' Function to get the date from the day number of the year '''
+
+    months = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 0]
+    if isleap(year): months[1] = 29
+
+    for i in range(len(months)):
+        if day > 0:
+            day -= months[i]
+        else:
+            break
+    
+    date = [day + months[i-1], i, year]
+
+    return date
+
 def get_timeslot(time:List, time_res:int=0):
     ''' 
     Function to return the nearest time slot (of TEC map) for a given time.
@@ -254,8 +270,8 @@ def get_GIM(time_date:str, time_res:int=0, plot:bool=False, del_temp:bool=True,
     time_date: STR
         Specify date and time in the format 'hh:mm DD/MM/YYYY'
     time_res: INT
-        Selected time resolution. 0 if 15 minute, 1 if 2 hour. By default, 
-        the 15min dataset is chosen.
+        Selected time resolution. 0 if single-shell model (jpli), 1 
+        if multi-shell model (jpld). By default, the jpli map is fetched.
     plot : BOOL
         Decide if the TEC maps will be plotted (by default False)
     del_temp : BOOL
@@ -275,11 +291,41 @@ def get_GIM(time_date:str, time_res:int=0, plot:bool=False, del_temp:bool=True,
             TEC map
     '''
 
+    # jpld map doesn't have the TEC map associated with time 00.00 of the 
+    # next day in the NetCDF file (epoch 97). The following lines of code
+    # address this issue by downloading and storing the map of the next day 
+    
+    # initialise a flag for later use (function return)
+    next_day_map = False
+    time = split_time_date(time_date)[0]
+    date = split_time_date(time_date)[1]
+
+    # the issue only occurs when the time is between 23.45 and 24.00
+    if time_res==1 and (time[0]==23 and time[1]>45): 
+        # find the next day of the year, taking into account leap years
+        # and months
+        day_num = get_day_num(date)
+        if (day_num == 365 and not isleap(date[2]) or 
+            day_num == 366 and     isleap(date[2])):
+            new_date = [1, 1, date[2]+1]
+        else:
+            new_date = inv_day_number(day_num+1, date[2])
+        
+        # construct the next time date to fetch the map
+        next_time_date = f'00:00 {new_date[0]}/{new_date[1]}/{new_date[2]}'
+
+        # recover the map recursively
+        next_GIM_map, next_time_str = get_GIM(next_time_date, time_res=1, del_temp=False)
+
+        # reset the original time_date 
+        time_date = f'23:45 {date[0]}/{date[1]}/{date[2]}'
+        next_day_map = True
+
+
     # construct url and extract filename and filepath of .netCDF4 file
     url = construct_url(time_date, time_res)
     fname = re.split(r'/', url)[-1]
     file_path = os.path.join(save_dir, os.path.splitext(fname)[0])
-
 
     # download the file if it does not exist yet
     if not os.path.isfile(file_path):
@@ -287,9 +333,9 @@ def get_GIM(time_date:str, time_res:int=0, plot:bool=False, del_temp:bool=True,
         assert os.path.isfile(file_path), 'File incorrectly downloaded'
 
     # identify nearest timeslots (and associated times)
-    og_time = split_time_date(time_date)[0]
-    timeslots = get_timeslot(og_time, time_res)
-    times_str = get_time(timeslots, time_res=time_res)
+    og_time   = split_time_date(time_date)[0]
+    timeslots = get_timeslot(og_time, time_res=0)
+    times_str = get_time(timeslots, time_res=0)
 
     # open file, read file and close the file
     try:
@@ -298,9 +344,16 @@ def get_GIM(time_date:str, time_res:int=0, plot:bool=False, del_temp:bool=True,
     finally:
         ds.close()
 
+
+    if next_day_map:
+        assert isinstance(times_str, str)
+
+        GIM_maps = [GIM_maps, next_GIM_map]
+        times_str = [times_str, next_time_str]
+
     # plotting
     if plot:
-        if isinstance(timeslots, int):
+        if isinstance(times_str, str):
             plot_TEC(GIM_maps, times_str)
         else:
             plot_TEC(GIM_maps[0], times_str[0])
