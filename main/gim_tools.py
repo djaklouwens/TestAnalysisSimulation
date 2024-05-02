@@ -357,7 +357,7 @@ def spherical_to_cartesian(lat, lon, rad=False):
     return np.cos(lat)*np.cos(lon), np.cos(lat)*np.sin(lon), np.sin(lat)
 
 def get_coord_around_pt(c_lat:float, c_lon:float,
-                        R_tspot:float, max_size=1000, lat_array:np.ndarray = np.arange(-89.5, 89.5+1, 1), lon_array:np.ndarray = np.arange(-179.5, 179.5+1, 1),  R_earth:float=6378, plot:bool=False, ax=None):
+                        R_tspot:float, max_size=300, lat_array:np.ndarray = np.arange(-89.5, 89.5+1, 1), lon_array:np.ndarray = np.arange(-179.5, 179.5+1, 1),  R_earth:float=6378, plot:bool=False, ax=None):
     '''
     Function that, for a given array of existing latitude and longitude coordinates, 
     determines the subset of coordinates that are within a particular ditance from 

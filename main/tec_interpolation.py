@@ -98,7 +98,7 @@ def tec_kriging(gim_matrix, lon: float, lat: int, image: bool = False, plot_vari
     '''
  
     
-    lat_if_array, lon_if_array = get_coord_around_pt(lat, lon, R_tspot=1200)
+    lat_if_array, lon_if_array = get_coord_around_pt(lat, lon, R_tspot=500)
     
     x_array = (179.5+lon_if_array).astype(int)
     y_array = abs(lat_if_array - 89.5).astype(int)
@@ -122,7 +122,7 @@ def tec_kriging(gim_matrix, lon: float, lat: int, image: bool = False, plot_vari
         variogram_model="exponential",
         verbose=False,
         enable_plotting=plot_variogram,
-        nlags=75,
+        nlags=50,
         coordinates_type="geographic",
     )
 
@@ -198,15 +198,22 @@ def mass_interpolate(lon_list, lat_list, sat_date_list):
     print("Staring mass interpolation...")
     starts = datetime.now()
     tec_results = np.array([])
+    failed_indices = []
     size = len(lon_list)
     for i in range(size):
-        tec_results = np.append(tec_results, time_interpolation(lon_list[i], lat_list[i], sat_date_list[i]))
-        print("Progress: " , i+1  , "/" , size)
+        try:
+            tec_results = np.append(tec_results, time_interpolation(lon_list[i], lat_list[i], sat_date_list[i]))
+            print("Progress: " , i+1  , "/" , size)
+        except ValueError:
+            print("Error: interpolation failed for point: ", i)
+            failed_indices.append(i)
+            
+        
         
     shutil.rmtree(temp_dir)
     ends = datetime.now()
     print("Interpolated: ", len(tec_results) ,"TEC points in Series Runtime: ", ends - starts ," s")
-    return tec_results
+    return tec_results, failed_indices
 
 if __name__ == '__main__':
 
