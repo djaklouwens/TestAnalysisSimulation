@@ -333,7 +333,7 @@ def get_GIM(time_date:str, time_res:int=1, plot:bool=False, del_temp:bool=True,
     if next_day_map:
         assert isinstance(times_str, str)
 
-        GIM_maps = [GIM_maps, next_GIM_map]
+        GIM_maps = np.array([GIM_maps, next_GIM_map])
         times_str = [times_str, next_time_str]
 
     # plotting
