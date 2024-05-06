@@ -1,15 +1,18 @@
-from rads_extraction import extract_rads
+from rads_extraction import extract_rads_duo
 from tec_interpolation import mass_interpolate
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import minimize
 from scipy.stats import linregress
-
+print("starting full_integration.py")
 # Parameters
 nlags: int = 50
 radius: int = 500
 max_points: int = 300
 del_temp: bool = False
+max_size: int = 20
+max_lat: float = None
+
 beta = 0.909 #jason to c2
 
 #beta_s3a = 0.936 # jason to s3a
@@ -37,41 +40,10 @@ uncorrected_file_name = 'j3_2016_summer_no_iono.nc'
 print("Selected SLA files: ", corrected_file_name," and " , uncorrected_file_name)
 print("Extracting RADS data")
 
+corrected_extraction, uncorrected_extraction = extract_rads_duo(corrected_file_name, uncorrected_file_name, max_lat=max_lat, max_size=max_size)
+corrected_time_list, corrected_lat_array, corrected_lon_array, corrected_sla_array = corrected_extraction
+uncorrected_time_list, uncorrected_lat_array, uncorrected_lon_array, uncorrected_sla_array = uncorrected_extraction
 
-
-
-def match_rads(datafile1, datafile2):
-    time_list1, lat_array1, lon_array1, sla_array1 = extract_rads(datafile1)
-    time_list2, lat_array2, lon_array2, sla_array2 = extract_rads(datafile2)
-    
-    indices_to_delete = []
-
-    # Iterate through time stamps in datafile2
-    for i, time in enumerate(time_list2):
-        # If the time stamp doesn't exist in datafile1, mark it for deletion
-        if time not in time_list1:
-            indices_to_delete.append(i)
-
-    # Delete the corresponding data from datafile2 arrays
-    for index in sorted(indices_to_delete, reverse=True):
-        del time_list2[index]
-        lat_array2 = np.delete(lat_array2, index, axis=0)
-        lon_array2 = np.delete(lon_array2, index, axis=0)
-        sla_array2 = np.delete(sla_array2, index, axis=0)
-
-    if(time_list1 != time_list2):
-        print("Error: Time lists do not match")
-        exit()
-
-    if(lat_array1.any() != lat_array2.any()):
-        print("Error: Latitude lists do not match")
-        exit()
-
-    if(lon_array1.any() != lon_array2.any()):
-        print("Error: Longitude lists do not match")
-        exit()
-        
-    return time_list2, lat_array2, lon_array2, sla_array2
 
 def delete_failed_indices(failed_indices, time_list, lat_array, lon_array, sla_array):
     failed_indices.reverse()
@@ -81,11 +53,6 @@ def delete_failed_indices(failed_indices, time_list, lat_array, lon_array, sla_a
         lon_array = np.delete(lon_array, index, axis=0)
         sla_array = np.delete(sla_array, index, axis=0)
     return time_list, lat_array, lon_array, sla_array
-
-
-        
-corrected_time_list, corrected_lat_array, corrected_lon_array, corrected_sla_array = extract_rads(corrected_file_name)
-uncorrected_time_list, uncorrected_lat_array, uncorrected_lon_array, uncorrected_sla_array = match_rads(corrected_file_name, uncorrected_file_name)
 
 print("Data files match")
 print("RADS Extraction successful!")

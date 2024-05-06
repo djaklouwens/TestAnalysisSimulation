@@ -8,6 +8,5 @@ requests
 pykrige
 ipykernel
 pmdarima
-statsmodels.tsa.arima_model
-statsmodels.tsa.holtwinters
-sklearn.metrics
+statsmodels
+scikit-learn
