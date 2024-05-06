@@ -243,7 +243,7 @@ def plot_TEC(tec_map, time_date, grid=True, save_fig=False, fpath=plot_dir,
 
 
 
-def get_GIM(time_date:str, time_res:int=0, plot:bool=False, del_temp:bool=True, 
+def get_GIM(time_date:str, time_res:int=1, plot:bool=False, del_temp:bool=True, 
             save_dir:str=temp_dir)->tuple:
     '''
     Function to extract the worldwide JPL GIM TEC maps for a given day/time and 
@@ -349,7 +349,7 @@ def get_GIM(time_date:str, time_res:int=0, plot:bool=False, del_temp:bool=True,
 
     return GIM_maps, times_str
 
-def save_GIMs(times_dates:list, time_res:int=0,
+def save_GIMs(times_dates:list, time_res:int=1,
             save_dir:str=temp_dir)->tuple:
     
     for time_date in times_dates:
