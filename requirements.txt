@@ -7,3 +7,7 @@ netCDF4
 requests
 pykrige
 ipykernel
+pmdarima
+statsmodels.tsa.arima_model
+statsmodels.tsa.holtwinters
+sklearn.metrics
