@@ -204,7 +204,7 @@ def time_interpolation(lon: float, lat: float, sat_date: float, nlags: int = 75,
 
     return tec
 
-def mass_interpolate(lon_list, lat_list, sat_date_list, nlags: int = 75, radius: int = 500, max_points: int = 300, time_res: int = time_res, del_temp: bool = True):
+def mass_interpolate(lon_list, lat_list, sat_date_list, nlags: int = 75, radius: int = 500, max_points: int = 300, time_res: int = 1, del_temp: bool = True):
     '''
     Perform mass interpolation of Total Electron Content (TEC) data for multiple points.
 
