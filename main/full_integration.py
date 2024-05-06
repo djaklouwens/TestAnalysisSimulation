@@ -3,23 +3,37 @@ from tec_interpolation import mass_interpolate
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import minimize
+from scipy.stats import linregress
 
-from gim_tools import save_GIMs
+# Parameters
+nlags: int = 50
+radius: int = 500
+max_points: int = 300
+del_temp: bool = False
+beta = 0.909 #jason to c2
+
+#beta_s3a = 0.936 # jason to s3a
 
 # Extract the RADS data
 
 #corrected_file_name = 'j3_2016_summer.nc'
 #uncorrected_file_name = 'j3_2016_summer_no_iono.nc'
 
-#unsmoothed_file_name = 'j3_2016_summer_unsmoothed.nc'
-#corrected_file_name = 'j3_2016_summer.nc'
-#uncorrected_file_name = 'j3_2016_summer_no_iono.nc'
+#corrected_file_name = 'c2_2016_summer.nc'
+#uncorrected_file_name = 'c2_2016_summer_no_iono.nc'
 
 #corrected_file_name = 'j3_2017_23000.nc'
 #uncorrected_file_name = 'j3_2017_23000_noiono.nc'
 
-corrected_file_name = 's3a_2017_1500.nc'
-uncorrected_file_name = 's3a_2017_1500_noiono.nc'
+#corrected_file_name = 'j3_2017_1920.nc'
+#uncorrected_file_name = 'j3_2017_1920_noiono.nc'
+
+corrected_file_name = 'c2_2017_18000.nc'
+uncorrected_file_name = 'c2_2017_18000_noiono.nc'
+
+#corrected_file_name = 's3a_2017_1500.nc'
+#uncorrected_file_name = 's3a_2017_1500_noiono.nc'
+
 print("Selected SLA files: ", corrected_file_name," and " , uncorrected_file_name)
 print("Extracting RADS data")
 
@@ -72,15 +86,12 @@ def delete_failed_indices(failed_indices, time_list, lat_array, lon_array, sla_a
         
 corrected_time_list, corrected_lat_array, corrected_lon_array, corrected_sla_array = extract_rads(corrected_file_name)
 uncorrected_time_list, uncorrected_lat_array, uncorrected_lon_array, uncorrected_sla_array = match_rads(corrected_file_name, uncorrected_file_name)
-print(corrected_sla_array, uncorrected_sla_array)
 
 print("Data files match")
-
-#delta_sla_unsmoothed_array = unsmoothed_sla_array - uncorrected_sla_array
 print("RADS Extraction successful!")
 # Interpolate the TEC data
-TEC_GIM, failed_indices = mass_interpolate(corrected_lon_array, corrected_lat_array, corrected_time_list)
-
+TEC_GIM, failed_indices = mass_interpolate(corrected_lon_array, corrected_lat_array, corrected_time_list, nlags = nlags, radius = radius, max_points = max_points, del_temp = del_temp)
+TEC_GIM = TEC_GIM
 corrected_time_list, corrected_lat_array, corrected_lon_array, corrected_sla_array = delete_failed_indices(failed_indices, corrected_time_list, corrected_lat_array, corrected_lon_array, corrected_sla_array)
 uncorrected_time_list, uncorrected_lat_array, uncorrected_lon_array, uncorrected_sla_array = delete_failed_indices(failed_indices, uncorrected_time_list, uncorrected_lat_array, uncorrected_lon_array, uncorrected_sla_array)
 
@@ -93,6 +104,7 @@ print("TEC_GIM results; " , TEC_GIM)
 freq = 13.575*10**9
 TEC_Jason = delta_sla_array/(40.3/freq**2)/ 10**16
 
+# Find factor by minimizing sum of absolute differences
 def loss_function(factor, TEC_GIM, TEC_Jason):
     adjusted_TEC_GIM_array = TEC_GIM * factor
     return np.sum(np.abs(adjusted_TEC_GIM_array - TEC_Jason))
@@ -100,17 +112,30 @@ def loss_function(factor, TEC_GIM, TEC_Jason):
 initial_guess = 0.8  # Initial guess for the constant factor
 
 result = minimize(loss_function, initial_guess, args=(TEC_GIM, TEC_Jason), bounds=[(0.4, 1)])
-best_factor = result.x[0]
-print("Best factor: ", best_factor)
-TEC_GIM_constf = TEC_GIM*best_factor
-#resultsfile = open("results2.txt", "w").write("delta iono: \n" + str(delta_iono_array) + "\n delta sla: \n" + str(delta_sla_array) + "\n difference: \n" + str(delta_iono_array-delta_sla_array))
-#resultsfile.close()
+factor_minimizing = result.x[0]
+TEC_GIM_constf_minimizing = TEC_GIM*factor_minimizing
+print("Factor minimizing: ", factor_minimizing)
 
+# Find factor by linear regression
 
-plt.plot(TEC_GIM, label = "GPS TEC")
+slope, intercept, r_value, p_value, std_err = linregress(TEC_GIM, TEC_Jason)
+print("Factor regression: ", slope, " intercept: ", intercept)
+TEC_GIM_constf_regression = TEC_GIM*slope + intercept
+
+plt.scatter(TEC_GIM, TEC_Jason, label='Raw GIM TEC')
+plt.plot(TEC_GIM, TEC_GIM_constf_regression, color = 'red', label = "Corrected GIM TEC (reg.)")
+plt.plot(TEC_GIM, TEC_GIM_constf_minimizing, color = 'green', label = "Corrected GIM TEC (min.)")
+plt.xlabel('GIM TEC')
+plt.ylabel('Jason 3 TEC')
+plt.legend()
+plt.show()
+
+plt.plot(TEC_GIM, label = "RAW GIM TEC")
 plt.plot(TEC_Jason, label = "JASON TEC")
-plt.plot(TEC_GIM_constf, label = "GPS TEC corrected to JASON altitude")
-
+plt.plot(TEC_GIM_constf_regression, color = 'red', label = "Corrected GIM TEC (reg.)")
+plt.plot(TEC_GIM_constf_minimizing, color = 'green', label = "Corrected GIM TEC (min.)")
+plt.ylabel('TEC')
+plt.xlabel('Index')
 plt.legend()
 plt.show()
 

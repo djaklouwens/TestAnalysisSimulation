@@ -151,8 +151,7 @@ def construct_url(time_date:str, time_res:int=0,
         Time and date in the format 'hh:mm DD/MM/YYYY'. This date must be one that 
         exists on the database.
     time_res: INT
-        Selected time resolution. 0 if 15 minute, 1 if 2 hour. By default, 
-        the 15min dataset is chosen.
+        Selected time resolution. 0 if jpli, 1 jpld. By default, jpli dataset is chosen.
     url_base: STR 
         Base url, by default set to: 'https://sideshow.jpl.nasa.gov/pub/iono_daily/gim_for_research/'
     
