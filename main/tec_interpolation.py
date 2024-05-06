@@ -139,7 +139,7 @@ def tec_kriging(gim_matrix, lon: float, lat: int, image: bool = False, plot_vari
 
 
 
-def time_interpolation(lon: float, lat: float, sat_date: float, time_res: int = 0, del_temp=False)->float:
+def time_interpolation(lon: float, lat: float, sat_date: float, time_res: int = 1, del_temp=False)->float:
     '''
     Function to linearly interpolate between two TEC maps,
     before and after the satellite's time, in order to stimate
@@ -163,8 +163,9 @@ def time_interpolation(lon: float, lat: float, sat_date: float, time_res: int = 
 
     
     '''
-    if time_res == 0: t = 15
-    elif time_res == 1: t = 120
+    # if time_res == 0: t = 15
+    # elif time_res == 1: t = 120
+    t = 15
 
     getGIM = get_GIM(sat_date, time_res, del_temp = del_temp)
 
