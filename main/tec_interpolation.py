@@ -147,7 +147,7 @@ def tec_kriging(gim_matrix, lon: float, lat: float, nlags: int = 75, radius: int
 
 
 
-def time_interpolation(lon: float, lat: float, sat_date: float, nlags: int = 75, radius: int = 500, max_points: int = 300, time_res: int = 0, del_temp=False)->float:
+def time_interpolation(lon: float, lat: float, sat_date: float, nlags: int = 75, radius: int = 500, max_points: int = 300, time_res: int = 1, del_temp=False)->float:
     '''
     Function to linearly interpolate between two TEC maps,
     before and after the satellite's time, in order to estimate
@@ -204,7 +204,7 @@ def time_interpolation(lon: float, lat: float, sat_date: float, nlags: int = 75,
 
     return tec
 
-def mass_interpolate(lon_list, lat_list, sat_date_list, nlags: int = 75, radius: int = 500, max_points: int = 300, del_temp: bool = True):
+def mass_interpolate(lon_list, lat_list, sat_date_list, nlags: int = 75, radius: int = 500, max_points: int = 300, time_res: int = time_res, del_temp: bool = True):
     '''
     Perform mass interpolation of Total Electron Content (TEC) data for multiple points.
 
@@ -242,7 +242,7 @@ def mass_interpolate(lon_list, lat_list, sat_date_list, nlags: int = 75, radius:
     size = len(lon_list)
     for i in range(size):
         try:
-            tec_results = np.append(tec_results, time_interpolation(lon_list[i], lat_list[i], sat_date_list[i], nlags = nlags, radius = radius, max_points = max_points))
+            tec_results = np.append(tec_results, time_interpolation(lon_list[i], lat_list[i], sat_date_list[i], nlags = nlags, radius = radius, max_points = max_points, time_res = time_res))
             print("Progress: " , i+1  , "/" , size)
         except ValueError:
             print("Error: interpolation failed for point: ", i)

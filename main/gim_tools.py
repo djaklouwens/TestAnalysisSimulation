@@ -62,23 +62,13 @@ def get_timeslot(time:List, time_res:int=0):
         the 15min dataset is chosen.
     
     '''
-    if time_res == 0:
-        tim1 = 4*time[0] + time[1]//15 
-        tim2 = tim1 +1
+    tim1 = 4*time[0] + time[1]//15 
+    tim2 = tim1 +1
 
-        if time[1]%15 == 0:
-            return tim1
-        else:
-            return np.array([tim1, tim2])
-    
-    if time_res == 1:
-        tim1 = time[0]//2
-        tim2 = tim1 +1
-
-        if (time[0] + time[1]/60) %2 ==0:
-            return tim1
-        else:
-            return np.array([tim1, tim2])
+    if time[1]%15 == 0:
+        return tim1
+    else:
+        return np.array([tim1, tim2])
 
    
 
@@ -192,14 +182,10 @@ def get_time(timeslot:int, rtype='str', time_res:int=0):
     both strings and arrays
     TODO: improve doc
     '''
-    if time_res == 0:
-        tot_minutes = 15 * timeslot
-        hours = tot_minutes//60
-        minutes = tot_minutes - hours*60
-    
-    if time_res == 1:
-        hours = 2 * timeslot
-        minutes = 0 * timeslot
+
+    tot_minutes = 15 * timeslot
+    hours = tot_minutes//60
+    minutes = tot_minutes - hours*60
         
 
     if rtype=='str':
