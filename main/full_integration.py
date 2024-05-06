@@ -16,8 +16,8 @@ beta = 0.909 #jason to c2
 
 # Extract the RADS data
 
-#corrected_file_name = 'j3_2016_summer.nc'
-#uncorrected_file_name = 'j3_2016_summer_no_iono.nc'
+corrected_file_name = 'j3_2016_summer.nc'
+uncorrected_file_name = 'j3_2016_summer_no_iono.nc'
 
 #corrected_file_name = 'c2_2016_summer.nc'
 #uncorrected_file_name = 'c2_2016_summer_no_iono.nc'
@@ -28,8 +28,8 @@ beta = 0.909 #jason to c2
 #corrected_file_name = 'j3_2017_1920.nc'
 #uncorrected_file_name = 'j3_2017_1920_noiono.nc'
 
-corrected_file_name = 'c2_2017_18000.nc'
-uncorrected_file_name = 'c2_2017_18000_noiono.nc'
+#corrected_file_name = 'c2_2017_18000.nc'
+#uncorrected_file_name = 'c2_2017_18000_noiono.nc'
 
 #corrected_file_name = 's3a_2017_1500.nc'
 #uncorrected_file_name = 's3a_2017_1500_noiono.nc'
@@ -91,7 +91,6 @@ print("Data files match")
 print("RADS Extraction successful!")
 # Interpolate the TEC data
 TEC_GIM, failed_indices = mass_interpolate(corrected_lon_array, corrected_lat_array, corrected_time_list, nlags = nlags, radius = radius, max_points = max_points, del_temp = del_temp)
-TEC_GIM = TEC_GIM
 corrected_time_list, corrected_lat_array, corrected_lon_array, corrected_sla_array = delete_failed_indices(failed_indices, corrected_time_list, corrected_lat_array, corrected_lon_array, corrected_sla_array)
 uncorrected_time_list, uncorrected_lat_array, uncorrected_lon_array, uncorrected_sla_array = delete_failed_indices(failed_indices, uncorrected_time_list, uncorrected_lat_array, uncorrected_lon_array, uncorrected_sla_array)
 

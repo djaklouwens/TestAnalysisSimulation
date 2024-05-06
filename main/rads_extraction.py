@@ -18,7 +18,7 @@ def convert_longitude_to_0_360(longitude):
 
 def extract_rads(file_name):
     file_directory = os.path.dirname(os.path.realpath('__file__'))
-    file_path = os.path.join(file_directory, 'RADS', file_name) # notita: add the 'main'
+    file_path = os.path.join(file_directory,'main', 'RADS', file_name) # notita: add the 'main'
     print(file_path)
     try:
         ds = nc.Dataset(file_path)
