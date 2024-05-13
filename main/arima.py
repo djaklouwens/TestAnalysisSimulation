@@ -57,7 +57,7 @@ def smoothing(nc_file, arima_order=(1, 1, 1), simpl_exp_params={'smoothing_level
             return None
 
     if 'Time' in df.columns:
-        time = df['Time'][::100]
+        time = df['Time'][::10]
         df['Time'] = pd.to_datetime(df['Time'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
         if 'sla' in df.columns:
             series = df['sla'][::100]
