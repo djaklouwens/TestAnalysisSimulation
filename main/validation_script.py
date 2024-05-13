@@ -9,57 +9,30 @@ import datetime as dt
 import alert
 import rads_extraction
 import tec_interpolation
+import integration_tools
 from directory_paths import res_dir
 
 
-def time_convert(date:str):
-    '''
-    Function that converts a date string from "HH:MM DD/MM/YYYY" to "YYYY-MM-DDTHH:MM:SS"
-    '''
-    date = date.split(' ')
-    time = date[0].split(':')
-    date = date[1].split('/')
-    return f'{date[2]}-{date[1]}-{date[0]}T{time[0]}:{time[1]}:00'
-
-
-def imic(alpha, beta, f=13.575e9, filename=None, time=None, lat=None, lon=None, sla_uncorrected=None):
-    '''docstring TODO'''
-    tecu = 1e16
-    
-    if filename is not None:
-        time, lat, lon, sla_uncorrected = rads_extraction.extract_rads(filename) #TODO check filenames
-    else:
-        assert (time is not None and lat is not None and lon is not None and sla_uncorrected is not None), 'Specify the correct data'
-    
-    alert.print_status('Start Interpolating')
-    tec_GPS, failed_indices = tec_interpolation.mass_interpolate(lon, lat, time, del_temp=False)
-    alert.print_status('Finish Interpolating')
-
-    # remove failed entries
-    time, lat, lon, sla_uncorrected = tec_interpolation.delete_failed_indices(failed_indices, time, lat, lon, sla_uncorrected)
-       
-    if isinstance(alpha, float) or isinstance(alpha, int):
-        return time, lat, lon, (40.3/f**2)*alpha*beta*(tec_GPS*tecu) + sla_uncorrected
-    else:
-        sla = [(40.3/f**2)*alpha[i]*beta[i]*(tec_GPS*tecu) + sla_uncorrected for i in range(len(alpha))]
-        return time, lat, lon, tuple(sla), failed_indices
-
 # the beta is particular to the sentinel-3a!
-alpha, beta = 0.83435, 0.936
+alpha, beta =  integration_tools.alpha, integration_tools.beta_S3
 
 # fetching the data
 alert.print_status('Start Extracting RADS Files')
-time_1, lat, lon, sla_uncorrected = rads_extraction.extract_rads(r'final_data\\s3a_2016_1500_noiono.nc') #TODO check filenames
-time_2, lat, lon, sla_true        = rads_extraction.extract_rads(r'final_data\\s3a_2016_1500.nc')        #TODO check filenames
-time_3, lat, lon, sla_RADS_gim    = rads_extraction.extract_rads(r'final_data\\s3a_2016_1500_gim.nc')    #TODO check filenames
+data = rads_extraction.extract_rads_pro(corrected_file=r'final_data\\s3a_2016_1500.nc',
+                                        uncorrected_file=r'final_data\\s3a_2016_1500_noiono.nc',
+                                        gimfile=r'final_data\\s3a_2016_1500_gim.nc')
 
-time_4, lat, lon, (sla_IMIC_gim, sla_unscaled), failed_indices = imic(alpha=(alpha, 1), beta=(beta, 1), filename=r'final_data\\s3a_2016_1500_noiono.nc')
+
+time, lat, lon, sla_true        = data[0] 
+time, lat, lon, sla_uncorrected = data[1]
+time, lat, lon, sla_RADS_gim    = data[2]
+time, lat, lon, (sla_IMIC_gim, sla_unscaled), failed_indices = integration_tools.imic(alpha=(alpha, 1), beta=(beta, 1), time=time, lat=lat, lon=lon, sla_uncorrected=sla_uncorrected)
 alert.print_status('Finish Extracting RADS Files')
 
 # remove failed entries in interpolation, to make comparison fair
-time_1, lat, lon, sla_uncorrected = tec_interpolation.delete_failed_indices(failed_indices, time_1, lat, lon, sla_uncorrected)
-time_2, lat, lon, sla_true        = tec_interpolation.delete_failed_indices(failed_indices, time_2, lat, lon, sla_true       )
-time_3, lat, lon, sla_RADS_gim    = tec_interpolation.delete_failed_indices(failed_indices, time_3, lat, lon, sla_RADS_gim   )
+time, lat, lon, sla_uncorrected = tec_interpolation.delete_failed_indices(failed_indices, time, lat, lon, sla_uncorrected)
+time, lat, lon, sla_true        = tec_interpolation.delete_failed_indices(failed_indices, time, lat, lon, sla_true       )
+time, lat, lon, sla_RADS_gim    = tec_interpolation.delete_failed_indices(failed_indices, time, lat, lon, sla_RADS_gim   )
 
 # post-processing
 alert.print_status('Start Processing')
@@ -96,7 +69,7 @@ with open(datafile, 'a') as f:
 # plotting data
 
 # setting the x-axis appropriately
-dates = [dt.datetime.fromisoformat(time_convert(date)) for date in time_1]
+dates = [dt.datetime.fromisoformat(integration_tools.time_convert(date)) for date in time]
 plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y/%m/%d'))
 plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=50))
 plt.gcf().autofmt_xdate()
