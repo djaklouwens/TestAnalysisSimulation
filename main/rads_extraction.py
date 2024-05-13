@@ -1,3 +1,4 @@
+from lib2to3.fixes.fix_tuple_params import simplify_args
 import os
 import netCDF4 as nc
 from datetime import datetime, timedelta
@@ -80,26 +81,59 @@ def match_extractions(corrected_extraction, uncorrected_extraction): #match extr
             indices_to_delete.append(i)
 
     # Delete the corresponding data from datafile2 arrays
-    uncorrected_extraction = del_indices([uncorrected_extraction], indices_to_delete)
+    uncorrected_extraction = del_indices([uncorrected_extraction], indices_to_delete)[0]
   
-    return uncorrected_extraction[0]
+    return uncorrected_extraction
 
-def extract_rads_duo(corrected_file, uncorrected_file, max_lat=None, max_size=None):
-   corrected_extraction = extract_rads(corrected_file, max_lat)
-   uncorrected_extraction = match_extractions(corrected_extraction, extract_rads(uncorrected_file, max_lat))
+def simplify_extraction(extraction): # deletes all double entries in the extraction
+    indices_to_delete = []
 
-   check_extractions(corrected_extraction, uncorrected_extraction)
+    for i, time in enumerate(extraction[0]):
+        if time in extraction[0][:i]:
+            indices_to_delete.append(i)            
+    extraction = del_indices([extraction], indices_to_delete)[0]
+    return extraction
+
+def extract_rads_pro(corrected_file, uncorrected_file, gimfile=None, max_lat=None, max_size=None):
+   
+    if gimfile is None:
+        corrected_extraction = simplify_extraction(extract_rads(corrected_file, max_lat))
+        uncorrected_extraction = match_extractions(corrected_extraction, simplify_extraction(extract_rads(uncorrected_file, max_lat)))
+
+        check_extractions(corrected_extraction, uncorrected_extraction)
 
    # Randomly select points if max_size is provided
-   if max_size is not None:
-        if len(corrected_extraction[0]) > max_size:     
-            indices = np.random.choice(len(corrected_extraction[0]), len(corrected_extraction[0])-max_size, replace=False)
-            extractions = del_indices([corrected_extraction, uncorrected_extraction], indices)
-            corrected_extraction = extractions[0]
-            uncorrected_extraction = extractions[1]
-   check_extractions(corrected_extraction, uncorrected_extraction)       
+        if max_size is not None:
+            if len(corrected_extraction[0]) > max_size:     
+                indices = np.random.choice(len(corrected_extraction[0]), len(corrected_extraction[0])-max_size, replace=False)
+                extractions = del_indices([corrected_extraction, uncorrected_extraction], indices)
+                corrected_extraction = extractions[0]
+                uncorrected_extraction = extractions[1]
+        check_extractions(corrected_extraction, uncorrected_extraction)       
+        return corrected_extraction, uncorrected_extraction
     
-   return corrected_extraction, uncorrected_extraction
+    else:
+        corrected_extraction = simplify_extraction(extract_rads(corrected_file, max_lat))
+        uncorrected_extraction = match_extractions(corrected_extraction, simplify_extraction(extract_rads(uncorrected_file, max_lat)))
+        gim_extraction = match_extractions(corrected_extraction, simplify_extraction(extract_rads(gimfile, max_lat)))
+
+        check_extractions(corrected_extraction, uncorrected_extraction)
+        check_extractions(corrected_extraction, gim_extraction)
+        check_extractions(uncorrected_extraction, gim_extraction)
+
+   # Randomly select points if max_size is provided
+        if max_size is not None:
+            if len(corrected_extraction[0]) > max_size:     
+                indices = np.random.choice(len(corrected_extraction[0]), len(corrected_extraction[0])-max_size, replace=False)
+                extractions = del_indices([corrected_extraction, uncorrected_extraction, gim_extraction], indices)
+                corrected_extraction = extractions[0]
+                uncorrected_extraction = extractions[1]
+                gim_extraction = extractions[2]
+        check_extractions(corrected_extraction, uncorrected_extraction)
+        check_extractions(corrected_extraction, gim_extraction)
+        check_extractions(uncorrected_extraction, gim_extraction)
+        return corrected_extraction, uncorrected_extraction, gim_extraction
+        
             
 
 
