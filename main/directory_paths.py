@@ -9,8 +9,11 @@ plot_dir = project_dir + '/plots/'
 # temp directory
 temp_dir = project_dir + '/temp/'
 
+# result directory
+res_dir = project_dir + '/results/'
+
 # directory list
-dir_lst = [plot_dir, temp_dir]
+dir_lst = [plot_dir, temp_dir, res_dir]
 
 for idir in dir_lst:
     if not os.path.exists(idir):

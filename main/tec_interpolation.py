@@ -259,6 +259,19 @@ def mass_interpolate(lon_list, lat_list, sat_date_list, nlags: int = 75, radius:
     print("Interpolated: ", len(tec_results) ,"TEC points in Series Runtime: ", ends - starts ," s")
     return tec_results, failed_indices
 
+
+def delete_failed_indices(failed_indices, time_list, lat_array, lon_array, sla_array):
+    '''
+    TODO: add docstring (copied straight from full_integration.py)
+    '''
+    failed_indices.reverse()
+    for index in failed_indices:
+        del time_list[index]
+        lat_array = np.delete(lat_array, index, axis=0)
+        lon_array = np.delete(lon_array, index, axis=0)
+        sla_array = np.delete(sla_array, index, axis=0)
+    return time_list, lat_array, lon_array, sla_array
+
 if __name__ == '__main__':
 
    #random lists
