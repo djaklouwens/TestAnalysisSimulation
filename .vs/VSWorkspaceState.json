@@ -2,9 +2,10 @@
   "ExpandedNodes": [
     "",
     "\\main",
+    "\\main\\GIMs",
     "\\main\\plots",
     "\\main\\RADS"
   ],
-  "SelectedNode": "\\main\\temp",
-  "PreviewInSolutionExplorer": false
+  "SelectedNode": "\\main\\validation_script.py",
+  "PreviewInSolutionExplorer": true
 }

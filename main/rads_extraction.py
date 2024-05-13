@@ -1,3 +1,4 @@
+from lib2to3.fixes.fix_tuple_params import simplify_args
 import os
 import netCDF4 as nc
 from datetime import datetime, timedelta
@@ -56,6 +57,8 @@ def del_indices(extractions: list, indices): #works for 1 or more extraction(s) 
 def check_extractions(extraction1, extraction2):
     if extraction1[0] != extraction2[0]:
         print("Error: Time lists do not match")
+        print(extraction1[0])
+        print(extraction2[0])
         exit()
 
     if extraction1[1].any() != extraction2[1].any():
@@ -80,13 +83,22 @@ def match_extractions(corrected_extraction, uncorrected_extraction): #match extr
             indices_to_delete.append(i)
 
     # Delete the corresponding data from datafile2 arrays
-    uncorrected_extraction = del_indices([uncorrected_extraction], indices_to_delete)
+    uncorrected_extraction = del_indices([uncorrected_extraction], indices_to_delete)[0]
   
-    return uncorrected_extraction[0]
+    return uncorrected_extraction
+
+def simplify_extraction(extraction): # deletes all double entries in the extraction
+    indices_to_delete = []
+
+    for i, time in enumerate(extraction[0]):
+        if time in extraction[0][:i]:
+            indices_to_delete.append(i)            
+    extraction = del_indices([extraction], indices_to_delete)[0]
+    return extraction
 
 def extract_rads_duo(corrected_file, uncorrected_file, max_lat=None, max_size=None):
-   corrected_extraction = extract_rads(corrected_file, max_lat)
-   uncorrected_extraction = match_extractions(corrected_extraction, extract_rads(uncorrected_file, max_lat))
+   corrected_extraction = simplify_extraction(extract_rads(corrected_file, max_lat))
+   uncorrected_extraction = match_extractions(corrected_extraction, simplify_extraction(extract_rads(uncorrected_file, max_lat)))
 
    check_extractions(corrected_extraction, uncorrected_extraction)
 
