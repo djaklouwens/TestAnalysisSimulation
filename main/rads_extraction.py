@@ -69,7 +69,7 @@ def check_extractions(extraction1, extraction2):
     else:
         return True
 
-def match_extractions(corrected_extraction, uncorrected_extraction): #match extraction2 to extraction1
+def match_extractions(corrected_extraction, uncorrected_extraction, gim_extraction = None): #match extraction2 to extraction1
     # extraction consists of [0] time_list, [1] lat_array, [2] lon_array, [3] sla_array    
     indices_to_delete = []
 
@@ -79,11 +79,16 @@ def match_extractions(corrected_extraction, uncorrected_extraction): #match extr
         # If the time stamp doesn't exist in corrected_extraction, mark it for deletion
         if time not in corrected_extraction[0]:
             indices_to_delete.append(i)
-
+    
     # Delete the corresponding data from datafile2 arrays
-    uncorrected_extraction = del_indices([uncorrected_extraction], indices_to_delete)[0]
+    if gim_extraction is None:
+        uncorrected_extraction = del_indices([uncorrected_extraction], indices_to_delete)[0]
+        return uncorrected_extraction
+    else:
+        gim_extraction = del_indices([gim_extraction], indices_to_delete)[0]
+        uncorrected_extraction = del_indices([uncorrected_extraction], indices_to_delete)[0]
+        return uncorrected_extraction, gim_extraction
   
-    return uncorrected_extraction
 
 def simplify_extraction(extraction): # deletes all double entries in the extraction
     indices_to_delete = []
@@ -114,7 +119,7 @@ def extract_rads_pro(corrected_file, uncorrected_file, gimfile=None, max_lat=Non
     
     else:
         corrected_extraction = simplify_extraction(extract_rads(corrected_file, max_lat))
-        uncorrected_extraction = match_extractions(corrected_extraction, simplify_extraction(extract_rads(uncorrected_file, max_lat)))
+        uncorrected_extraction, gim_extraction = match_extractions(corrected_extraction, simplify_extraction(extract_rads(uncorrected_file, max_lat)), simplify_extraction(extract_rads(gimfile, max_lat)))
         gim_extraction = match_extractions(corrected_extraction, simplify_extraction(extract_rads(gimfile, max_lat)))
 
         check_extractions(corrected_extraction, uncorrected_extraction)
@@ -129,60 +134,8 @@ def extract_rads_pro(corrected_file, uncorrected_file, gimfile=None, max_lat=Non
                 corrected_extraction = extractions[0]
                 uncorrected_extraction = extractions[1]
                 gim_extraction = extractions[2]
-        check_extractions(corrected_extraction, uncorrected_extraction)
-        check_extractions(corrected_extraction, gim_extraction)
-        check_extractions(uncorrected_extraction, gim_extraction)
+                check_extractions(corrected_extraction, uncorrected_extraction)
+                check_extractions(corrected_extraction, gim_extraction)
+                check_extractions(uncorrected_extraction, gim_extraction)
         return corrected_extraction, uncorrected_extraction, gim_extraction
-        
-            
-
-
-   
-
-   
-
-  
-  
-    
-    
-    
-    
-    
-    
-    
-    
-    
-   ''' 
-    time_list1, lat_array1, lon_array1, sla_array1 = extract_rads(file_name1, max_lat)
-    time_list2, lat_array2, lon_array2, sla_array2 = extract_rads(file_name2, max_lat)
-    
-    indices_to_delete = []
-
-    # Iterate through time stamps in datafile2
-    for i, time in enumerate(time_list2):
-        # If the time stamp doesn't exist in datafile1, mark it for deletion
-        if time not in time_list1:
-            indices_to_delete.append(i)
-
-    # Delete the corresponding data from datafile2 arrays
-    for index in sorted(indices_to_delete, reverse=True):
-        del time_list2[index]
-        lat_array2 = np.delete(lat_array2, index, axis=0)
-        lon_array2 = np.delete(lon_array2, index, axis=0)
-        sla_array2 = np.delete(sla_array2, index, axis=0)
-
-    if(time_list1 != time_list2):
-        print("Error: Time lists do not match")
-        exit()
-
-    if(lat_array1.any() != lat_array2.any()):
-        print("Error: Latitude lists do not match")
-        exit()
-
-    if(lon_array1.any() != lon_array2.any()):
-        print("Error: Longitude lists do not match")
-        exit()
-        
-    return time_list2, lat_array2, lon_array2, sla_array2)
-
-'''        
+          

@@ -1,4 +1,4 @@
-from rads_extraction import extract_rads_duo
+from rads_extraction import extract_rads_pro
 from tec_interpolation import mass_interpolate
 import matplotlib.pyplot as plt
 import numpy as np
@@ -46,7 +46,7 @@ uncorrected_file_name = 'j3_170101_60_noiono.nc'
 print("Selected SLA files: ", corrected_file_name," and " , uncorrected_file_name)
 print("Extracting RADS data")
 
-corrected_extraction, uncorrected_extraction = extract_rads_duo(corrected_file_name, uncorrected_file_name, max_lat=max_lat, max_size=max_size)
+corrected_extraction, uncorrected_extraction = extract_rads_pro(corrected_file_name, uncorrected_file_name, max_lat=max_lat, max_size=max_size)
 corrected_time_list, corrected_lat_array, corrected_lon_array, corrected_sla_array = corrected_extraction
 uncorrected_time_list, uncorrected_lat_array, uncorrected_lon_array, uncorrected_sla_array = uncorrected_extraction
 
