@@ -57,8 +57,6 @@ def del_indices(extractions: list, indices): #works for 1 or more extraction(s) 
 def check_extractions(extraction1, extraction2):
     if extraction1[0] != extraction2[0]:
         print("Error: Time lists do not match")
-        print(extraction1[0])
-        print(extraction2[0])
         exit()
 
     if extraction1[1].any() != extraction2[1].any():
@@ -96,22 +94,46 @@ def simplify_extraction(extraction): # deletes all double entries in the extract
     extraction = del_indices([extraction], indices_to_delete)[0]
     return extraction
 
-def extract_rads_duo(corrected_file, uncorrected_file, max_lat=None, max_size=None):
-   corrected_extraction = simplify_extraction(extract_rads(corrected_file, max_lat))
-   uncorrected_extraction = match_extractions(corrected_extraction, simplify_extraction(extract_rads(uncorrected_file, max_lat)))
+def extract_rads_pro(corrected_file, uncorrected_file, gimfile=None, max_lat=None, max_size=None):
+   
+    if gimfile is None:
+        corrected_extraction = simplify_extraction(extract_rads(corrected_file, max_lat))
+        uncorrected_extraction = match_extractions(corrected_extraction, simplify_extraction(extract_rads(uncorrected_file, max_lat)))
 
-   check_extractions(corrected_extraction, uncorrected_extraction)
+        check_extractions(corrected_extraction, uncorrected_extraction)
 
    # Randomly select points if max_size is provided
-   if max_size is not None:
-        if len(corrected_extraction[0]) > max_size:     
-            indices = np.random.choice(len(corrected_extraction[0]), len(corrected_extraction[0])-max_size, replace=False)
-            extractions = del_indices([corrected_extraction, uncorrected_extraction], indices)
-            corrected_extraction = extractions[0]
-            uncorrected_extraction = extractions[1]
-   check_extractions(corrected_extraction, uncorrected_extraction)       
+        if max_size is not None:
+            if len(corrected_extraction[0]) > max_size:     
+                indices = np.random.choice(len(corrected_extraction[0]), len(corrected_extraction[0])-max_size, replace=False)
+                extractions = del_indices([corrected_extraction, uncorrected_extraction], indices)
+                corrected_extraction = extractions[0]
+                uncorrected_extraction = extractions[1]
+        check_extractions(corrected_extraction, uncorrected_extraction)       
+        return corrected_extraction, uncorrected_extraction
     
-   return corrected_extraction, uncorrected_extraction
+    else:
+        corrected_extraction = simplify_extraction(extract_rads(corrected_file, max_lat))
+        uncorrected_extraction = match_extractions(corrected_extraction, simplify_extraction(extract_rads(uncorrected_file, max_lat)))
+        gim_extraction = match_extractions(corrected_extraction, simplify_extraction(extract_rads(gimfile, max_lat)))
+
+        check_extractions(corrected_extraction, uncorrected_extraction)
+        check_extractions(corrected_extraction, gim_extraction)
+        check_extractions(uncorrected_extraction, gim_extraction)
+
+   # Randomly select points if max_size is provided
+        if max_size is not None:
+            if len(corrected_extraction[0]) > max_size:     
+                indices = np.random.choice(len(corrected_extraction[0]), len(corrected_extraction[0])-max_size, replace=False)
+                extractions = del_indices([corrected_extraction, uncorrected_extraction, gim_extraction], indices)
+                corrected_extraction = extractions[0]
+                uncorrected_extraction = extractions[1]
+                gim_extraction = extractions[2]
+        check_extractions(corrected_extraction, uncorrected_extraction)
+        check_extractions(corrected_extraction, gim_extraction)
+        check_extractions(uncorrected_extraction, gim_extraction)
+        return corrected_extraction, uncorrected_extraction, gim_extraction
+        
             
 
 
