@@ -7,7 +7,7 @@ import alert
 
 alpha = 0.83435
 beta_CS = 0.926
-beta_S3 = 0.947
+beta_S3 = 0.947 # 0.972435897343 #0.988793 #
 
 def time_convert(date:str):
     '''
@@ -39,6 +39,8 @@ def imic(alpha, beta, f=13.575e9, filename=None, time=None, lat=None, lon=None, 
     if isinstance(alpha, float) or isinstance(alpha, int):
         return time, lat, lon, (40.3/f**2)*alpha*beta*(tec_GPS*tecu) + sla_uncorrected
     else:
-        sla = [(40.3/f**2)*alpha[i]*beta[i]*(tec_GPS*tecu) + sla_uncorrected for i in range(len(alpha))]
+        sla = [(40.3/f**2)*(alpha[i]*beta[i]*(tec_GPS))*tecu + sla_uncorrected for i in range(len(alpha))]
+        for i in range(len(alpha)):
+            print(alpha[i]*beta[i])
         return time, lat, lon, tuple(sla), failed_indices
     

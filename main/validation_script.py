@@ -20,8 +20,8 @@ alpha, beta =  integration_tools.alpha, integration_tools.beta_S3
 alert.print_status('Start Extracting RADS Files')
 data = rads_extraction.extract_rads_pro(corrected_file=r'final_data\\s3a_2016_1500.nc',
                                         uncorrected_file=r'final_data\\s3a_2016_1500_noiono.nc',
-                                        gimfile=r'final_data\\s3a_2016_1500_gim.nc')
-
+                                        gimfile=r'final_data\\s3a_2016_1500_gim.nc',
+                                        max_lat=55)
 
 time, lat, lon, sla_true        = data[0] 
 time, lat, lon, sla_uncorrected = data[1]
@@ -58,13 +58,27 @@ alert.print_status('Finish Processing')
 # setting up the filenames
 basefname = f'{dt.datetime.now():%Y-%m-%d %H.%M} - S3A - a={alpha} b={beta}'
 datafile = os.path.join(res_dir, basefname+'.txt')
-plotfile = os.path.jon(res_dir, basefname+'.png') 
+rawdatafile = os.path.join(res_dir, basefname+'_raw.csv')
+plotfile = os.path.join(res_dir, basefname+'.png') 
 
-## storing data
-df = pd.DataFrame([mean_arr, std_arr], ['Mean (cm)', 'Std (cm)'], ['Unscaled', 'IMIC', 'RADS GIM'])
+# changing the times array
+dates = [dt.datetime.fromisoformat(integration_tools.time_convert(date)) for date in time]
 
+# storing data
+cols = ['Time', 'Lat', 'Lon', 'Unscaled', 'IMIC', 'RADS GIM']
+
+# raw data
+export_arr = np.append(np.array([dates, lat, lon], dtype='O'), diff_arr, axis=0).T
+print(export_arr.shape)
+df_raw = pd.DataFrame(export_arr, columns=cols)
+with open(rawdatafile, 'a') as f:
+    df_raw.to_csv(path_or_buf=f, sep=',', lineterminator='\n')
+
+# summary data
+df_tab = pd.DataFrame([mean_arr, std_arr], ['Mean (cm)', 'Std (cm)'], cols[3:])
 with open(datafile, 'a') as f:
-    df.to_string(buf=f)
+    df_tab.to_string(buf=f)
+
 
 # plotting data
 
@@ -75,9 +89,9 @@ plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=50))
 plt.gcf().autofmt_xdate()
 
 # actual plotting
-plt.plot(dates, unit_change*diff_unscaled, color='orange', label=r'unscaled IMIC model ($\alpha=\beta=1$)')
-plt.plot(dates, unit_change*diff_IMIC    , color='green' , label='scaling with IMIC model')
-plt.plot(dates, unit_change*diff_RADS_gim, color='blue'  , label='scaling with RADS GIM model')
+plt.plot(dates, unit_change*diff_unscaled, color='orange', alpha=0.6, label=r'unscaled MIC')
+plt.plot(dates, unit_change*diff_IMIC    , color='green' , alpha=0.6, label='scaled MIC')
+plt.plot(dates, unit_change*diff_RADS_gim, color='blue'  , alpha=0.6, label='RADS GIM')
 
 # making the figure pretty
 plt.grid(True, alpha=0.6)
@@ -86,7 +100,7 @@ plt.xlabel('Time')
 plt.ylabel('diff wrt. dual-frequency measurement [cm]')
 
 # saving and showing
-plt.savefig(plotfile, dpi=300)
+plt.savefig(plotfile, dpi=400)
 
 alert.print_status('Program Complete')
 alert.play_sound()
