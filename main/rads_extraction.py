@@ -21,15 +21,25 @@ def extract_rads(file_name, max_lat=None):
     file_directory = os.path.dirname(os.path.realpath('__file__'))
     file_path = os.path.join(file_directory, r'main\\RADS', file_name) # notita: add the 'main'
     print(file_path)
-    try:
-        ds = nc.Dataset(file_path)
-        secs_array = np.array(ds['time'][:])
-        lat_array = np.array(ds['lat'][:])
-        lon_array = np.array(ds['lon'][:])
-        sla_array = np.array(ds['sla'][:])
-    finally:
-        ds.close()
 
+    if os.path.splitext(file_path)[-1].lower() == 'nc':
+        try:
+            ds = nc.Dataset(file_path)
+            secs_array = np.array(ds['time'][:])
+            lat_array = np.array(ds['lat'][:])
+            lon_array = np.array(ds['lon'][:])
+            sla_array = np.array(ds['sla'][:])
+        finally:
+            ds.close()
+    elif os.path.splitext(file_path)[-1].lower() == 'asc':
+        data = np.loadtxt(file_path, skiprows=13)
+        secs_array = data[:, 0]
+        lat_array  = data[:, 1]
+        lon_array  = data[:, 2]
+        sla_array  = data[:, 3] 
+    else:
+        raise TypeError(f'Unaccepted filetype for: {file_path}')
+    
     time_list = [convert_time(t) for t in secs_array]
     lon_array = np.array([convert_longitude_to_0_360(lon) for lon in lon_array])
     
