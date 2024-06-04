@@ -242,6 +242,19 @@ def plot_TEC(tec_map, time_date, grid=True, save_fig=False, fpath=plot_dir,
     plt.show()
 
 
+def get_next_day(date):
+    '''
+    Find the next day of the year, taking into account leap years
+    and months
+    '''
+    day_num = get_day_num(date)
+    if (day_num == 365 and not isleap(date[2]) or 
+        day_num == 366 and     isleap(date[2])):
+        new_date = [1, 1, date[2]+1]
+    else:
+        new_date = inv_day_number(day_num+1, date[2])
+    
+    return new_date
 
 def get_GIM(time_date:str, time_res:int=1, plot:bool=False, del_temp:bool=True, 
             save_dir:str=temp_dir)->tuple:
@@ -287,14 +300,7 @@ def get_GIM(time_date:str, time_res:int=1, plot:bool=False, del_temp:bool=True,
 
     # the issue only occurs when the time is between 23.45 and 24.00
     if time_res==1 and (time[0]==23 and time[1]>45): 
-        # find the next day of the year, taking into account leap years
-        # and months
-        day_num = get_day_num(date)
-        if (day_num == 365 and not isleap(date[2]) or 
-            day_num == 366 and     isleap(date[2])):
-            new_date = [1, 1, date[2]+1]
-        else:
-            new_date = inv_day_number(day_num+1, date[2])
+        new_date = get_next_day(date)
         
         # construct the next time date to fetch the map
         next_time_date = f'00:00 {new_date[0]}/{new_date[1]}/{new_date[2]}'

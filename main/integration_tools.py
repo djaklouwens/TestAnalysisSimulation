@@ -6,8 +6,8 @@ import rads_extraction
 import alert
 
 alpha = 0.83435
-beta_CS = 0.926
-beta_S3 = 0.947 # 0.972435897343 #0.988793 #
+beta_CS = 0.858 # 12 May (6 May - 0.907)
+beta_S3 = 0.903 # 12 May (6 May - 0.938)
 
 def time_convert(date:str):
     '''
