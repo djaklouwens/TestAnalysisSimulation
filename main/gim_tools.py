@@ -242,7 +242,7 @@ def plot_TEC(tec_map, time_date, grid=True, save_fig=False, fpath=plot_dir,
     plt.show()
 
 
-def get_next_day(date):
+def get_next_day(date:list)->list:
     '''
     Find the next day of the year, taking into account leap years
     and months

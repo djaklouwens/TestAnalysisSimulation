@@ -10,8 +10,6 @@ def convert_time(seconds_since_1985):
     formatted_date = target_date.strftime('%H:%M %d/%m/%Y')
     return formatted_date
 
-
-
 def convert_longitude_to_0_360(longitude):
     while longitude < -180:
         longitude += 360
