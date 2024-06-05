@@ -1,3 +1,0 @@
-           Unscaled      IMIC  RADS GIM
-Mean (cm) -0.053321 -0.732395  -0.03260
-Std (cm)   0.597113  0.554765   0.59566
