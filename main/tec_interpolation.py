@@ -1,15 +1,17 @@
-import shutil
-from time import sleep
-from directory_paths import project_dir, temp_dir, plot_dir, illegal_char
-import numpy as np
-from matplotlib import pyplot as plt
-from pykrige.ok import OrdinaryKriging
-import netCDF4 as nc
-from datetime import datetime
 import os
 import re
-from gim_tools import get_GIM, split_time_date, get_coord_around_pt, save_GIMs
+import shutil
+import datetime as dt
 import multiprocessing
+
+import numpy as np
+import matplotlib.pyplot as plt
+import netCDF4 as nc
+from pykrige.ok import OrdinaryKriging
+
+from directory_paths import temp_dir
+import gim_tools
+import datetime_tools as dt_extra
 
 def tec(gim_matrix, x:int, y:int)->float:
     ''' Function to calculate Total Electron Content (TEC) given longitude (x) and latitude (y). '''
@@ -106,7 +108,7 @@ def tec_kriging(gim_matrix, lon: float, lat: float, nlags: int = 75, radius: int
     '''
  
     
-    lat_if_array, lon_if_array = get_coord_around_pt(lat, lon, R_tspot=radius, max_size=max_points)
+    lat_if_array, lon_if_array = gim_tools.get_coord_around_pt(lat, lon, R_tspot=radius, max_size=max_points)
     
     x_array = (179.5+lon_if_array).astype(int)
     y_array = abs(lat_if_array - 89.5).astype(int)
@@ -179,12 +181,12 @@ def time_interpolation(lon: float, lat: float, sat_date: float, nlags: int = 75,
     
     '''
     t = 15
-    getGIM = get_GIM(sat_date, time_res, del_temp = del_temp)
+    getGIM = gim_tools.get_GIM(sat_date, time_res, del_temp = del_temp)
 
     if getGIM[0].ndim == 3:
         gim1, gim2 = getGIM[0]
 
-        sat_time = split_time_date(sat_date)[0]
+        sat_time = dt_extra.split_time_date(sat_date)[0]
         gim1_time = [int(i) for i in re.split(r'[:.,]', getGIM[1][0])]
         gim2_time = [int(i) for i in re.split(r'[:.,]', getGIM[1][1])]
 
@@ -236,9 +238,9 @@ def mass_interpolate(lon_list, lat_list, sat_date_list, nlags: int = 75, radius:
     '''
     
     print("Checking availability of source GIMs...")
-    save_GIMs(sat_date_list)
+    gim_tools.save_GIMs(sat_date_list)
     print("Staring mass interpolation...")
-    starts = datetime.now()
+    starts = dt.datetime.now()
     tec_results = np.array([])
     failed_indices = []
     size = len(lon_list)
@@ -255,7 +257,7 @@ def mass_interpolate(lon_list, lat_list, sat_date_list, nlags: int = 75, radius:
         shutil.rmtree(temp_dir)
         print("gim files deleted")
         
-    ends = datetime.now()
+    ends = dt.datetime.now()
     print("Interpolated: ", len(tec_results) ,"TEC points in Series Runtime: ", ends - starts ," s")
     return tec_results, failed_indices
 

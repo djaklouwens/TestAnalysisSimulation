@@ -9,15 +9,6 @@ alpha = 0.83435
 beta_CS = 0.858 # 12 May (6 May - 0.907)
 beta_S3 = 0.903 # 12 May (6 May - 0.938)
 
-def time_convert(date:str):
-    '''
-    Function that converts a date string from "HH:MM DD/MM/YYYY" to "YYYY-MM-DDTHH:MM:SS"
-    '''
-    date = date.split(' ')
-    time = date[0].split(':')
-    date = date[1].split('/')
-    return f'{date[2]}-{date[1]}-{date[0]}T{time[0]}:{time[1]}:00'
-
 
 def imic(alpha, beta, f=13.575e9, filename=None, time=None, lat=None, lon=None, sla_uncorrected=None):
     '''docstring TODO'''

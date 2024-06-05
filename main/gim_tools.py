@@ -1,55 +1,18 @@
 import os
 import re
 import gzip
-from typing import List
 import shutil
+import requests
+from typing import List
+
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
 import netCDF4 as nc
-import requests
 
 from directory_paths import project_dir, temp_dir, plot_dir, illegal_char
+import datetime_tools as dt_extra
 
-def isleap(year:int)->bool:
-    ''' Function to check if a year is a leap year '''    
-    
-    if year > 1582: # Gregorian Calendar
-        return (year % 4 == 0 and year % 100 != 0 or year % 400 == 0)
-    else:           # Julian Calendar
-        return (year % 4 == 0)
-
-def get_day_num(date:list)->int:
-    ''' Function to get the number of days since the first of January of that year '''
-
-    # initialise days of month
-    months = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-
-    if isleap(date[-1]):
-        months[1] = 29
-
-    day = 0
-    for i in range(date[1]-1):
-        day += months[i]
-    day += date[0]
-
-    return day
-
-def inv_day_number(day:int, year:int):
-    ''' Function to get the date from the day number of the year '''
-
-    months = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 0]
-    if isleap(year): months[1] = 29
-
-    for i in range(len(months)):
-        if day > 0:
-            day -= months[i]
-        else:
-            break
-    
-    date = [day + months[i-1], i, year]
-
-    return date
 
 def get_timeslot(time:List, time_res:int=0):
     ''' 
@@ -69,8 +32,30 @@ def get_timeslot(time:List, time_res:int=0):
         return tim1
     else:
         return np.array([tim1, tim2])
+    
 
-   
+def get_time(timeslot:int, rtype='str', time_res:int=0):
+    '''
+    Function that fetches the time for a given timeslot, and handles 
+    both strings and arrays
+    TODO: improve doc
+    '''
+
+    tot_minutes = 15 * timeslot
+    hours = tot_minutes//60
+    minutes = tot_minutes - hours*60
+        
+
+    if rtype=='str':
+        if not isinstance(timeslot, int):
+            return [f'{hours[i]:>02}:{minutes[i]:>02}' for i in range(len(timeslot))]
+        else:
+            return f'{hours:>02}:{minutes:>02}'
+    elif rtype=='array':
+        if not isinstance(timeslot, int):
+            return [[hours[i], minutes[i]] for i in range(len(timeslot))]
+        else:
+            return [hours, minutes]
 
 def download_file(url:str, save_dir:str=temp_dir, unzip:bool=False)->None:
     ''' 
@@ -155,49 +140,20 @@ def construct_url(time_date:str, time_res:int=0,
 
     url_base += f'{jpl_type}/'
 
-    date = split_time_date(time_date)[1]
+    date = dt_extra.split_time_date(time_date)[1]
  
-    fname = f'{jpl_type}{get_day_num(date):>03}0.{str(date[2])[-2:]:>02}i.nc.gz'
+    fname = f'{jpl_type}{dt_extra.get_day_num(date):>03}0.{str(date[2])[-2:]:>02}i.nc.gz'
 
     return f'{url_base}/{date[2]}/{fname}'
 
-def split_time_date(time_date):
-    ''' 
-    Function that splits time_date in the following way
-    from   'hh:mm DD/MM/YYYY'    to    ([hh, mm], [DD, MM, YYYY]) 
-    '''
-    time, date = time_date.split()
-    time = [int(i) for i in re.split(r'[:.,]', time)]
-    date = [int(i) for i in re.split(r'[-.,/]', date)]
-    return time, date
+
 
 def array_coord(lat, lon):
     row = -lat + 89.5
     column = lon + 179.5
     return (row, column)
 
-def get_time(timeslot:int, rtype='str', time_res:int=0):
-    '''
-    Function that fetches the time for a given timeslot, and handles 
-    both strings and arrays
-    TODO: improve doc
-    '''
 
-    tot_minutes = 15 * timeslot
-    hours = tot_minutes//60
-    minutes = tot_minutes - hours*60
-        
-
-    if rtype=='str':
-        if not isinstance(timeslot, int):
-            return [f'{hours[i]:>02}:{minutes[i]:>02}' for i in range(len(timeslot))]
-        else:
-            return f'{hours:>02}:{minutes:>02}'
-    elif rtype=='array':
-        if not isinstance(timeslot, int):
-            return [[hours[i], minutes[i]] for i in range(len(timeslot))]
-        else:
-            return [hours, minutes]
 
 def no_iplot(func):
     '''Decorator to turn off and on the interactive mode in matplotlib'''
@@ -242,19 +198,7 @@ def plot_TEC(tec_map, time_date, grid=True, save_fig=False, fpath=plot_dir,
     plt.show()
 
 
-def get_next_day(date:list)->list:
-    '''
-    Find the next day of the year, taking into account leap years
-    and months
-    '''
-    day_num = get_day_num(date)
-    if (day_num == 365 and not isleap(date[2]) or 
-        day_num == 366 and     isleap(date[2])):
-        new_date = [1, 1, date[2]+1]
-    else:
-        new_date = inv_day_number(day_num+1, date[2])
-    
-    return new_date
+
 
 def get_GIM(time_date:str, time_res:int=1, plot:bool=False, del_temp:bool=True, 
             save_dir:str=temp_dir)->tuple:
@@ -295,12 +239,12 @@ def get_GIM(time_date:str, time_res:int=1, plot:bool=False, del_temp:bool=True,
     
     # initialise a flag for later use (function return)
     next_day_map = False
-    time = split_time_date(time_date)[0]
-    date = split_time_date(time_date)[1]
+    time = dt_extra.split_time_date(time_date)[0]
+    date = dt_extra.split_time_date(time_date)[1]
 
     # the issue only occurs when the time is between 23.45 and 24.00
     if time_res==1 and (time[0]==23 and time[1]>45): 
-        new_date = get_next_day(date)
+        new_date = dt_extra.get_next_day(date)
         
         # construct the next time date to fetch the map
         next_time_date = f'00:00 {new_date[0]}/{new_date[1]}/{new_date[2]}'
@@ -324,7 +268,7 @@ def get_GIM(time_date:str, time_res:int=1, plot:bool=False, del_temp:bool=True,
         assert os.path.isfile(file_path), 'File incorrectly downloaded'
 
     # identify nearest timeslots (and associated times)
-    og_time   = split_time_date(time_date)[0]
+    og_time   = dt_extra.split_time_date(time_date)[0]
     timeslots = get_timeslot(og_time, time_res=0)
     times_str = get_time(timeslots, time_res=0)
 
@@ -370,9 +314,6 @@ def save_GIMs(times_dates:list, time_res:int=1,
             download_file(url, save_dir=save_dir, unzip=True)
             assert os.path.isfile(file_path), 'File incorrectly downloaded'
     print("All neccessary source GIMs availible for interpolation!")
-
-
-
 
 
 def spherical_to_cartesian(lat, lon, rad=False):

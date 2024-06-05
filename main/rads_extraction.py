@@ -1,14 +1,9 @@
-from lib2to3.fixes.fix_tuple_params import simplify_args
 import os
-import netCDF4 as nc
-from datetime import datetime, timedelta
-import numpy as np
 
-def convert_time(seconds_since_1985):
-    base_date = datetime(1985, 1, 1, 0, 0, 0)
-    target_date = base_date + timedelta(seconds=seconds_since_1985)
-    formatted_date = target_date.strftime('%H:%M %d/%m/%Y')
-    return formatted_date
+import numpy as np
+import netCDF4 as nc
+
+import datetime_tools as dt_extra
 
 def convert_longitude_to_0_360(longitude):
     while longitude < -180:
@@ -22,7 +17,7 @@ def extract_rads(file_name, max_lat=None):
     file_path = os.path.join(file_directory, r'main\\RADS', file_name) # notita: add the 'main'
     print(file_path)
 
-    if os.path.splitext(file_path)[-1].lower() == 'nc':
+    if os.path.splitext(file_path)[-1].lower() == '.nc':
         try:
             ds = nc.Dataset(file_path)
             secs_array = np.array(ds['time'][:])
@@ -31,7 +26,7 @@ def extract_rads(file_name, max_lat=None):
             sla_array = np.array(ds['sla'][:])
         finally:
             ds.close()
-    elif os.path.splitext(file_path)[-1].lower() == 'asc':
+    elif os.path.splitext(file_path)[-1].lower() == '.asc':
         data = np.loadtxt(file_path, skiprows=13)
         secs_array = data[:, 0]
         lat_array  = data[:, 1]
@@ -40,7 +35,7 @@ def extract_rads(file_name, max_lat=None):
     else:
         raise TypeError(f'Unaccepted filetype for: {file_path}')
     
-    time_list = [convert_time(t) for t in secs_array]
+    time_list = [dt_extra.get_time_date(t) for t in secs_array]
     lon_array = np.array([convert_longitude_to_0_360(lon) for lon in lon_array])
     
     # Apply latitude filter if provided

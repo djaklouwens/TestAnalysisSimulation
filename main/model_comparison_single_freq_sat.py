@@ -11,6 +11,7 @@ import rads_extraction
 import tec_interpolation
 from directory_paths import res_dir
 import integration_tools
+import datetime_tools as dt_extra
 
 # the beta is particular to the cryosat-2!
 alpha, beta = integration_tools.alpha, integration_tools.beta_CS
@@ -63,15 +64,15 @@ with open(datafile, 'a') as f:
 #plotting data
 
 # setting the x-axis appropriately
-dates = [dt.datetime.fromisoformat(integration_tools.time_convert(date)) for date in time]
+dates = [dt.datetime.fromisoformat(dt_extra.convert_time_date_for_plotting(date)) for date in time]
 plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y/%m/%d'))
 plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=50))
 plt.gcf().autofmt_xdate()
 
 # actual plotting
-plt.plot(dates, unit_change*sla_unscaled, color='orange'  , label=r'unscaled IMIC model ($\alpha=\beta=1$)')
-plt.plot(dates, unit_change*sla_IMIC_gim, color='green'   , label='scaling with IMIC model')
-plt.plot(dates, unit_change*sla_RADS_gim, color='blue'    , label='scaling with RADS GIM model')
+plt.plot(dates, unit_change*sla_unscaled, color='orange'   , label=r'unscaled IMIC model ($\alpha=\beta=1$)')
+plt.plot(dates, unit_change*sla_IMIC_gim, color='green'    , label='scaling with IMIC model')
+plt.plot(dates, unit_change*sla_RADS_gim, color='blue'     , label='scaling with RADS GIM model')
 plt.plot(dates, unit_change*sla_uncorrected, color='black' , label='uncorrected data')
 
 # making the figure pretty
