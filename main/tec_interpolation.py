@@ -6,11 +6,12 @@ import multiprocessing
 
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.basemap import Basemap
+import gim_tools
 import netCDF4 as nc
 from pykrige.ok import OrdinaryKriging
 
 from directory_paths import temp_dir
-import gim_tools
 import datetime_tools as dt_extra
 
 def tec(gim_matrix, x:int, y:int)->float:
@@ -19,9 +20,11 @@ def tec(gim_matrix, x:int, y:int)->float:
     if x == 360: x = 0
     return gim_matrix[y, x]
 
+
 def index_to_geo(x: np.ndarray, y: np.ndarray) -> tuple:
     ''' 
-    Function to convert index coordinates to geographic (spherical) coordinates.
+    Function to convert index (associated with RADS data) coordinates to 
+    geographic (spherical) coordinates.
     
     Parameters
     ----------
@@ -71,6 +74,106 @@ def index_to_geo(x: np.ndarray, y: np.ndarray) -> tuple:
     
     return lon, lat
 
+
+def geo_to_cartesian_vec(lat, lon, rad=False):
+    '''
+    Function to convert latitude and longitude coordinates into cartesian coordinate.
+    
+    Parameters
+    ----------
+    lat: float or ndarray
+        Latitude angle(s)
+    lon: float or ndarray
+        Longitude angle(s)
+    rad: bool (default: False)
+        Indicate whether the specified angles are in radians.
+    
+    Returns
+    -------
+    (float, float, float) or (ndarray, ndarray, ndarray)
+        Returns the x, y and z components of a unit vector in the direction of the latitude
+        and longitude coordinate.
+    
+    '''
+    if not rad:
+        lat = np.deg2rad(lat)
+        lon = np.deg2rad(lon)
+    return np.cos(lat)*np.cos(lon), np.cos(lat)*np.sin(lon), np.sin(lat)
+
+def get_coord_around_pt(c_lat:float, c_lon:float,
+                        R_tspot:float, max_size=300, lat_array:np.ndarray = np.arange(-89.5, 89.5+1, 1), lon_array:np.ndarray = np.arange(-179.5, 179.5+1, 1),  R_earth:float=6378, plot:bool=False, ax=None):
+    '''
+    Function that, for a given array of existing latitude and longitude coordinates, 
+    determines the subset of coordinates that are within a particular ditance from 
+    a central coordinate.
+    
+    Parameters
+    ----------
+    lat_array: np.ndarray
+        Numpy array (1D) of existing latitude coordinates.
+    lon_array: np.ndarray
+        Numpy array (1D) of existing longitude coordinates.
+    c_lat: float
+        Latitude coordinate of centre coordinate.
+    c_lon: float
+        Longitude coordinate of centre coordinate.
+    R_tspot: float
+        Largest acceptable distance from centre point, in Km. Translates to radius 
+        of target spot.
+    R_earth: float (assumed 6378 Km)
+        Radius of the Earth, assumed constant.
+    plot: bool (False by default)
+        Determine whether to plot the target spot in a world map.
+    ax: matplotlib axes object (None by default)
+        Pass the axes on which to plot the target spot. Only useful if
+        bool is set to True. If not provided, a new axes is generated.
+    
+    Returns
+    -------
+    tlat, tlon : np.ndarray
+        Existing latitude and longitude coordinates that are within R_tspot 
+        distance from the centre coordinate. Both are one-dimensional arrarys.    
+    '''
+    gamma = R_tspot / R_earth # characteristic angle of cone, in radians
+
+    lon, lat = np.meshgrid(lon_array, lat_array)
+
+    c_vec = np.array(geo_to_cartesian_vec(c_lat, c_lon))
+    u = np.array(geo_to_cartesian_vec(lat, lon))
+    u = np.rollaxis(u, 0, 3)
+
+    angles = np.arccos(np.inner(u, c_vec))
+    condition = angles < gamma
+    tlat = lat[condition]
+    tlon = lon[condition]
+ 
+    #remove elements if array is too big
+    if tlon.size > max_size:
+        remove_indeces = sorted(np.random.choice(len(tlon), tlon.size-max_size, replace=False), reverse=True)
+        for i in remove_indeces:
+            tlon = np.delete(tlon, i)
+            tlat = np.delete(tlat, i)
+    #print(tlon.size)
+    if plot:
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(14, 8))
+            earth = Basemap()
+    
+        grid_style = {'linewidth': 0.2, 'dashes':[1,0], 'labels':[1, 1, 1, 1], 'labelstyle':'+/-'}
+        earth.drawcoastlines(color='#555566', linewidth=1, ax=ax)
+        #earth.plot(lon.reshape(-1), lat.reshape(-1), 'k.', alpha=0.5 ,latlon=True, ax=ax)
+        arg_order = np.argsort(tlon)
+
+        earth.plot(tlon[arg_order], tlat[arg_order], 'g.', latlon=True, ax=ax, alpha=0.6)
+        earth.plot(c_lon, c_lat, 'ro', latlon=True, ax=ax)
+                
+        earth.drawmeridians(np.arange(-180, 181, 20), **grid_style, ax=ax)
+        earth.drawparallels(np.arange(-90, 91, 30), **grid_style, ax=ax)
+        plt.show()
+  
+    return tlat, tlon
+
+
 def tec_kriging(gim_matrix, lon: float, lat: float, nlags: int = 75, radius: int = 500, max_points: int = 300, image: bool = False, plot_variogram: bool = False) -> float:
     ''' 
     Function to perform kriging interpolation of Total Electron Content (TEC) data.
@@ -108,7 +211,7 @@ def tec_kriging(gim_matrix, lon: float, lat: float, nlags: int = 75, radius: int
     '''
  
     
-    lat_if_array, lon_if_array = gim_tools.get_coord_around_pt(lat, lon, R_tspot=radius, max_size=max_points)
+    lat_if_array, lon_if_array = get_coord_around_pt(lat, lon, R_tspot=radius, max_size=max_points)
     
     x_array = (179.5+lon_if_array).astype(int)
     y_array = abs(lat_if_array - 89.5).astype(int)

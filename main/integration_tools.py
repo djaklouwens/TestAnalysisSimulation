@@ -9,6 +9,15 @@ alpha = 0.83435
 beta_CS = 0.858 # 12 May (6 May - 0.907)
 beta_S3 = 0.903 # 12 May (6 May - 0.938)
 
+'''
+history of beta values
+--------------------
+   | 12/05 | 06/05 |
+---|-------|-------|
+CS | 0.858 | 0.907 |
+S3 | 0.903 | 0.938 | 
+--------------------
+'''
 
 def imic(alpha, beta, f=13.575e9, filename=None, time=None, lat=None, lon=None, sla_uncorrected=None):
     '''docstring TODO'''
