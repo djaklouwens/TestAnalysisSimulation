@@ -2,6 +2,7 @@ numpy
 scipy
 pandas
 matplotlib
+scikit-learn
 basemap
 netCDF4
 requests
@@ -9,4 +10,5 @@ pykrige
 ipykernel
 pmdarima
 statsmodels
-scikit-learn
+suncalc
+jupyter

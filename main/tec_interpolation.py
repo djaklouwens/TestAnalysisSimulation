@@ -7,10 +7,10 @@ import multiprocessing
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
-import gim_tools
 import netCDF4 as nc
 from pykrige.ok import OrdinaryKriging
 
+import gim_tools
 from directory_paths import temp_dir
 import datetime_tools as dt_extra
 

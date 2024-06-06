@@ -1,12 +1,11 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import pmdarima as pm
 import pickle
 from statsmodels.tsa.arima_model import ARIMA
 from statsmodels.tsa.holtwinters import SimpleExpSmoothing, Holt
 from sklearn.metrics import mean_squared_error
-import os
 from netCDF4 import Dataset
 
 def smoothing(nc_file, arima_order=(1, 1, 1), simpl_exp_params={'smoothing_level': [0.2, 0.3, 0.5]}, holts_lin_params={'smoothing_level': [0.2, 0.3, 0.5], 'smoothing_trend': [0.05, 0.1, 0.2]}):
