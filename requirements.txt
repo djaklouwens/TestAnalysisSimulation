@@ -1,14 +1,12 @@
+jupyter
 numpy
 scipy
 pandas
 matplotlib
+mpl_toolkits
 scikit-learn
-basemap
 netCDF4
 requests
 pykrige
-ipykernel
 pmdarima
-statsmodels
 suncalc
-jupyter
