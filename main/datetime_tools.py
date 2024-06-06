@@ -27,13 +27,14 @@ def split_time_date(time_date:str):
     date = [int(i) for i in re.split(r'[-.,/]', date)]
     return time, date
 
-def convert_time_date_for_plotting(time_date:str)->str:
+def get_datetime_obj(time_date:str)->str:
     '''
     Function that converts a date string from "HH:MM DD/MM/YYYY" to 
-    "YYYY-MM-DDTHH:MM:SS", for plotting purposes with matplotlib.
+    a datetime object.
     '''
     time, date = split_time_date(time_date)
-    return f'{date[2]}-{date[1]}-{date[0]}T{time[0]}:{time[1]}:00'
+    iso_timedate = f'{date[2]}-{date[1]}-{date[0]}T{time[0]}:{time[1]}:00'
+    return dt.datetime.fromisoformat(iso_timedate)
 
 def get_sec_since_1985(date:list)->float:
     '''

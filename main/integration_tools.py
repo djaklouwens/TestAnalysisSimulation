@@ -1,4 +1,3 @@
-
 import numpy as np
 
 import tec_interpolation
@@ -6,25 +5,26 @@ import rads_extraction
 import alert
 
 alpha = 0.83435
-beta_CS = 0.858 # 12 May (6 May - 0.907)
-beta_S3 = 0.903 # 12 May (6 May - 0.938)
+beta_CS = 0.817 
+beta_S3 = 0.877
 
 '''
 history of beta values
---------------------
-   | 12/05 | 06/05 |
----|-------|-------|
-CS | 0.858 | 0.907 |
-S3 | 0.903 | 0.938 | 
---------------------
+----------------------------
+   | 12/02 | 06/02 | 22/01 |
+---|-------|-------|-------|
+CS | 0.858 | 0.907 | 0.817 |
+S3 | 0.903 | 0.938 | 0.877 |
+----------------------------
 '''
 
-def imic(alpha, beta, f=13.575e9, filename=None, time=None, lat=None, lon=None, sla_uncorrected=None):
+
+def mic(alpha, beta, f=13.575e9, filepath=None, time=None, lat=None, lon=None, sla_uncorrected=None, **kwargs):
     '''docstring TODO'''
     tecu = 1e16
     
-    if filename is not None:
-        time, lat, lon, sla_uncorrected = rads_extraction.extract_rads(filename) #TODO check filenames
+    if filepath is not None:
+        time, lat, lon, sla_uncorrected = rads_extraction.extract_rads(filepath, **kwargs) #TODO check filenames
         print("shouldn't be here")
     else:
         assert (time is not None and lat is not None and lon is not None and sla_uncorrected is not None), 'Specify the correct data'

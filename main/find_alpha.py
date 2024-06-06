@@ -13,10 +13,6 @@ del_temp: bool = False
 max_size: int = None
 max_lat: float = None
 
-beta = 0.909 #jason to c2
-
-#beta_s3a = 0.936 # jason to s3a
-
 # Extract the RADS data
 
 #corrected_file_name = 'j3_2016_summer.nc'

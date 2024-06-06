@@ -174,7 +174,8 @@ def get_coord_around_pt(c_lat:float, c_lon:float,
     return tlat, tlon
 
 
-def tec_kriging(gim_matrix, lon: float, lat: float, nlags: int = 75, radius: int = 500, max_points: int = 300, image: bool = False, plot_variogram: bool = False) -> float:
+def tec_kriging(gim_matrix, lon: float, lat: float, nlags: int = 75, radius: int = 500, max_points: int = 300,
+                 image: bool = False, plot_variogram: bool = False) -> float:
     ''' 
     Function to perform kriging interpolation of Total Electron Content (TEC) data.
     
@@ -252,7 +253,8 @@ def tec_kriging(gim_matrix, lon: float, lat: float, nlags: int = 75, radius: int
 
 
 
-def time_interpolation(lon: float, lat: float, sat_date: float, nlags: int = 75, radius: int = 500, max_points: int = 300, time_res: int = 1, del_temp=False)->float:
+def time_interpolation(lon:float, lat:float, sat_date:float, nlags:int=75, 
+                       radius:int=500, max_points:int=300, del_temp=False)->float:
     '''
     Function to linearly interpolate between two TEC maps,
     before and after the satellite's time, in order to estimate
@@ -272,8 +274,7 @@ def time_interpolation(lon: float, lat: float, sat_date: float, nlags: int = 75,
         Radius of the interpolation window in kilometers. Default is 500.
     max_points: int, optional
         Maximum number of surrounding points to be used for interpolation. Default is 300.
-        time_res: INT
-        Selected time resolution. 0 if jpli, 1 jpld. By default, jpli dataset is chosen.
+
     del_temp: bool, optional
         If True, deletes temporary files after use. Default is False.
 
@@ -284,7 +285,7 @@ def time_interpolation(lon: float, lat: float, sat_date: float, nlags: int = 75,
     
     '''
     t = 15
-    getGIM = gim_tools.get_GIM(sat_date, time_res, del_temp = del_temp)
+    getGIM = gim_tools.get_GIM(sat_date, del_temp=del_temp)
 
     if getGIM[0].ndim == 3:
         gim1, gim2 = getGIM[0]
@@ -309,7 +310,8 @@ def time_interpolation(lon: float, lat: float, sat_date: float, nlags: int = 75,
 
     return tec
 
-def mass_interpolate(lon_list, lat_list, sat_date_list, nlags: int = 75, radius: int = 500, max_points: int = 300, time_res: int = 1, del_temp: bool = True):
+def mass_interpolate(lon_list, lat_list, sat_date_list, nlags:int=75, 
+                     radius:int=500, max_points:int=300, del_temp:bool=True):
     '''
     Perform mass interpolation of Total Electron Content (TEC) data for multiple points.
 
@@ -329,8 +331,6 @@ def mass_interpolate(lon_list, lat_list, sat_date_list, nlags: int = 75, radius:
         Maximum number of surrounding points to be used for interpolation. Default is 300.
     del_temp: bool, optional
         If True, deletes temporary files after use. Default is True.
-    time_res: int, optional
-        Selected time resolution. 0 if jpli, 1 jpld. By default, jpld dataset is chosen.
 
     Returns
     -------
@@ -341,7 +341,8 @@ def mass_interpolate(lon_list, lat_list, sat_date_list, nlags: int = 75, radius:
     '''
     
     print("Checking availability of source GIMs...")
-    gim_tools.save_GIMs(sat_date_list)
+    gim_tools.fetch_GIM_files(sat_date_list)
+    print("All neccessary source GIMs availible for interpolation!")
     print("Staring mass interpolation...")
     starts = dt.datetime.now()
     tec_results = np.array([])
@@ -349,16 +350,16 @@ def mass_interpolate(lon_list, lat_list, sat_date_list, nlags: int = 75, radius:
     size = len(lon_list)
     for i in range(size):
         try:
-            tec_results = np.append(tec_results, time_interpolation(lon_list[i], lat_list[i], sat_date_list[i], nlags = nlags, radius = radius, max_points = max_points, time_res = time_res))
+            tec_results = np.append(tec_results, time_interpolation(lon_list[i], lat_list[i], sat_date_list[i], 
+                                                                    nlags=nlags, radius=radius, max_points=max_points))
             print("Progress: " , i+1  , "/" , size)
         except ValueError:
             print("Error: interpolation failed for point: ", i)
             failed_indices.append(i)
-            
         
     if del_temp:
         shutil.rmtree(temp_dir)
-        print("gim files deleted")
+        print("Gim files deleted")
         
     ends = dt.datetime.now()
     print("Interpolated: ", len(tec_results) ,"TEC points in Series Runtime: ", ends - starts ," s")
@@ -380,9 +381,11 @@ def delete_failed_indices(failed_indices, time_list, lat_array, lon_array, sla_a
 if __name__ == '__main__':
 
    #random lists
-    lon_list = [np.random.uniform(0,360) for _ in range(36)]
-    lat_list = [np.random.uniform(-90,90) for _ in range(36)]
-    sat_date_list = ["23:54 16/03/2017", "00:08 16/03/2017", "00:09 16/03/2016", "00:10 16/03/2017", "00:11 16/03/2017", "00:12 16/03/2017", "00:13 16/03/2017","00:14 16/03/2017","00:16 16/03/2017","00:07 16/03/2017", "00:08 16/03/2017", "00:09 16/03/2017", "00:10 16/03/2017", "00:11 16/03/2017", "00:12 16/03/2017", "00:13 16/03/2017","00:14 16/03/2017","00:16 16/03/2017","00:07 16/03/2017", "00:08 16/03/2017", "00:09 16/03/2016", "00:10 16/03/2017", "00:11 16/03/2017", "00:12 16/03/2017", "00:13 16/03/2017","00:14 16/03/2017","00:16 16/03/2017","00:07 15/03/2017", "00:08 16/03/2017", "00:34 16/03/2017", "00:10 16/03/2017", "00:11 16/03/2017", "00:12 16/03/2017", "00:13 16/03/2017","00:14 16/03/2014","00:16 16/03/2017"]
+    # lon_list = [np.random.uniform(0,360) for _ in range(36)]
+    # lat_list = [np.random.uniform(-90,90) for _ in range(36)]
+    # sat_date_list = ["23:54 16/03/2017", "00:08 16/03/2017", "00:09 16/03/2016", "00:10 16/03/2017", "00:11 16/03/2017", "00:12 16/03/2017", "00:13 16/03/2017","00:14 16/03/2017","00:16 16/03/2017","00:07 16/03/2017", "00:08 16/03/2017", "00:09 16/03/2017", "00:10 16/03/2017", "00:11 16/03/2017", "00:12 16/03/2017", "00:13 16/03/2017","00:14 16/03/2017","00:16 16/03/2017","00:07 16/03/2017", "00:08 16/03/2017", "00:09 16/03/2016", "00:10 16/03/2017", "00:11 16/03/2017", "00:12 16/03/2017", "00:13 16/03/2017","00:14 16/03/2017","00:16 16/03/2017","00:07 15/03/2017", "00:08 16/03/2017", "00:34 16/03/2017", "00:10 16/03/2017", "00:11 16/03/2017", "00:12 16/03/2017", "00:13 16/03/2017","00:14 16/03/2014","00:16 16/03/2017"]
     
-    mi = mass_interpolate(lon_list, lat_list, sat_date_list)
-    print(mi)
+    # mi = mass_interpolate(lon_list, lat_list, sat_date_list)
+    # print(mi)
+
+    get_coord_around_pt(91, 0, 1200, plot=True)
