@@ -2,6 +2,7 @@ import os
 import warnings
 
 import numpy as np
+import pandas as pd
 import netCDF4 as nc
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
@@ -18,7 +19,7 @@ def convert_longitude_to_0_360(longitude):
         longitude += 360
     return longitude
 
-def find_start_passes(file_path, verbose=True):
+def find_start_passes(file_path, verbose=False, results=False):
     '''
     This function reads an .asc data file from RADS and determine the starting
     line of each pass (orbital period).
@@ -27,24 +28,40 @@ def find_start_passes(file_path, verbose=True):
     ----------
     file_path: STR
         Filepath in question. Must be .asc file!
-    verbose: BOOL (default: True)
+    verbose: BOOL (default: False)
         Set to True to print the number of passes in the file
-
+    results: BOOL (default: False)
+        Set to True to analyse the results file (.csv file). Otherwise, the .asc
+        file from RADS is inspected.
+    
     Returns
     -------
     start_pass_lines: List[INT]
         List containing the indexes associated with the line number in the file where
         each pass start.
-    
     '''
 
-    if os.path.splitext(file_path)[-1] != '.asc':
-        raise TypeError('Searching for distinct passes is only developed for .asc files.')
+    if not results:
+        if os.path.splitext(file_path)[-1] != '.asc':
+            raise TypeError('Searching for distinct passes is only developed for .asc files (non results).')
 
-    with open(file_path, 'r') as f: lines = f.readlines()
-    hashtag_lines = np.array([i for i, line in enumerate(lines) if '#' in line])
-    diff = np.concatenate((np.array([30]), hashtag_lines[1:] - hashtag_lines[:-1]))
-    start_pass_lines = hashtag_lines[diff > 1]
+        with open(file_path, 'r') as f: lines = f.readlines()
+        hashtag_lines = np.array([i for i, line in enumerate(lines) if '#' in line])
+        diff = np.concatenate((np.array([30]), hashtag_lines[1:] - hashtag_lines[:-1]))
+        start_pass_lines = hashtag_lines[diff > 1]
+    else:
+        if os.path.splitext(file_path)[-1] != '.csv':
+            raise TypeError('Searching for distinct passes is only developed for .csv files (results).')
+        
+        with open(file_path, 'r') as f:
+            df = pd.read_table(f, sep=',', header=0, index_col=0)
+        
+        time = df['Time'].to_list()               
+        time2 = [dt_extra.get_datetime_obj(time_i, inverse=True) for time_i in time]
+        time = np.array([dt_extra.get_sec_since_1985(time_i) for time_i in time2])
+
+        diff = np.concatenate((np.array([1000]), time[1:] - time[:-1]))
+        start_pass_lines = np.arange(0, time.size, 1)[diff > 10*60]
 
     if verbose:
         print(f'There are {len(start_pass_lines)} passes in ({file_path})')
@@ -203,7 +220,6 @@ def match_extractions(corrected_extraction, uncorrected_extraction, gim_extracti
         uncorrected_extraction = del_indices([uncorrected_extraction], indices_to_delete)[0]
         return uncorrected_extraction, gim_extraction
   
-
 def simplify_extraction(extraction): # deletes all double entries in the extraction
     indices_to_delete = []
 
@@ -212,7 +228,7 @@ def simplify_extraction(extraction): # deletes all double entries in the extract
             indices_to_delete.append(i)            
     extraction = del_indices([extraction], indices_to_delete)[0]
 
-    print(len(indices_to_delete))
+    print(f'Number of repeated entries: {len(indices_to_delete)}')
     return extraction
 
 def extract_rads_pro(corrected_file, uncorrected_file, gimfile=None, max_lat=None, max_size=None, pass_n=None):
@@ -268,4 +284,4 @@ def extract_rads_pro(corrected_file, uncorrected_file, gimfile=None, max_lat=Non
                 check_extractions(uncorrected_extraction, gim_extraction)
         
         return corrected_extraction, uncorrected_extraction, gim_extraction
-          
+

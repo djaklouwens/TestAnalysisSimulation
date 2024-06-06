@@ -11,18 +11,23 @@ import rads_extraction
 import tec_interpolation
 import integration_tools
 import datetime_tools as dt_extra
-from directory_paths import res_dir
-
+from directory_paths import project_dir, res_dir
 
 # the beta is particular to the sentinel-3a!
 alpha, beta =  integration_tools.alpha, integration_tools.beta_S3
 
 # fetching the data
 alert.print_status('Start Extracting RADS Files')
-data = rads_extraction.extract_rads_pro(corrected_file=r'RADS\\final_data\\s3a_2016_1500.nc',
-                                        uncorrected_file=r'RADS\\final_data\\s3a_2016_1500_noiono.nc',
-                                        gimfile=r'RADS\\final_data\\s3a_2016_1500_gim.nc',
-                                        max_lat=55)
+corrected_file   = r'RADS\\03_22_01_data\\s3a_240122.asc'
+uncorrected_file = r'RADS\\03_22_01_data\\s3a_240122_noiono.asc'
+gim_file = r'RADS\\03_22_01_data\\s3a_240122_gim.asc'
+pass_n = 30
+
+data = rads_extraction.extract_rads_pro(corrected_file=os.path.join(project_dir,corrected_file),
+                                        uncorrected_file=os.path.join(project_dir,uncorrected_file),
+                                        gimfile=os.path.join(project_dir,gim_file),
+                                        max_lat=55,
+                                        pass_n=pass_n)
 
 time, lat, lon, sla_true        = data[0] 
 time, lat, lon, sla_uncorrected = data[1]
@@ -58,7 +63,7 @@ alert.print_status('Finish Processing')
 # ----------- saving the data ----------------------------
 
 # setting up the filenames
-basefname = f'{dt.datetime.now():%Y-%m-%d %H.%M} - S3A - a={alpha} b={beta}'
+basefname = f'{dt.datetime.now():%Y-%m-%d %H.%M} - S3A (pass {pass_n:>02}) - a={alpha:.4f} b={beta:.4f}'
 datafile = os.path.join(res_dir, basefname+'.txt')
 rawdatafile = os.path.join(res_dir, basefname+'_raw.csv')
 
@@ -70,7 +75,6 @@ cols = ['Time', 'Lat', 'Lon', 'MIC Unscaled', 'MIC', 'RADS GIM']
 
 # raw data
 export_arr = np.append(np.array([dates, lat, lon], dtype='O'), diff_arr, axis=0).T
-print(export_arr.shape)
 df_raw = pd.DataFrame(export_arr, columns=cols)
 with open(rawdatafile, 'a') as f:
     df_raw.to_csv(path_or_buf=f, sep=',', lineterminator='\n')

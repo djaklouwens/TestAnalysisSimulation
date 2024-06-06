@@ -348,13 +348,14 @@ def mass_interpolate(lon_list, lat_list, sat_date_list, nlags:int=75,
     tec_results = np.array([])
     failed_indices = []
     size = len(lon_list)
+    digits = len(str(size))
     for i in range(size):
         try:
             tec_results = np.append(tec_results, time_interpolation(lon_list[i], lat_list[i], sat_date_list[i], 
                                                                     nlags=nlags, radius=radius, max_points=max_points))
-            print("Progress: " , i+1  , "/" , size)
+            print(f"Progress: {i+1:>0{digits}} / {size}")
         except ValueError:
-            print("Error: interpolation failed for point: ", i)
+            print(f"Error: interpolation failed for point: {i}")
             failed_indices.append(i)
         
     if del_temp:

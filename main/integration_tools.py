@@ -4,7 +4,7 @@ import tec_interpolation
 import rads_extraction
 import alert
 
-alpha = 0.83435
+alpha = 0.9173138576965778
 beta_CS = 0.817 
 beta_S3 = 0.877
 
@@ -40,7 +40,5 @@ def mic(alpha, beta, f=13.575e9, filepath=None, time=None, lat=None, lon=None, s
         return time, lat, lon, (40.3/f**2)*alpha*beta*(tec_GPS*tecu) + sla_uncorrected
     else:
         sla = [(40.3/f**2)*(alpha[i]*beta[i]*(tec_GPS))*tecu + sla_uncorrected for i in range(len(alpha))]
-        for i in range(len(alpha)):
-            print(alpha[i]*beta[i])
         return time, lat, lon, tuple(sla), failed_indices
     

@@ -1,0 +1,3 @@
+           MIC Unscaled       MIC  RADS GIM
+Mean (cm)      0.422637 -1.772653 -0.247341
+Std (cm)       0.887021  0.504298  0.733959

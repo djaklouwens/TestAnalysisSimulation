@@ -24,7 +24,7 @@ max_lat: float = None
 corrected_file_name = os.path.join(pj, r'RADS\\03_22_01_data\\j3_240122.asc')
 uncorrected_file_name = os.path.join(pj, r'RADS\\03_22_01_data\\j3_240122_noiono.asc')
 
-print("Selected SLA files: ", corrected_file_name," and " , uncorrected_file_name)
+print(f"Selected SLA files: {os.path.split(corrected_file_name)[0]} and {os.path.split(uncorrected_file_name)[0]}")
 print("Extracting RADS data")
 
 corrected_extraction, uncorrected_extraction = extract_rads_pro(corrected_file_name, uncorrected_file_name, max_lat=max_lat, max_size=max_size)
