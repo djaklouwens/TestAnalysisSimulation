@@ -9,18 +9,18 @@ months = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
 def get_time_date(seconds_since_1985:float)->str:
     '''
-    Function to get the time date, in the form 'hh:mm DD/MM/YYYY'
-    from seconds since 00:00 01/01/1985.
+    Function to get the time date, in the form 'hh:mm:ss DD/MM/YYYY'
+    from seconds since 00:00:00 01/01/1985.
     '''
     base_date = dt.datetime(1985, 1, 1, 0, 0, 0)
     target_date = base_date + dt.timedelta(seconds=seconds_since_1985)
-    formatted_date = target_date.strftime('%H:%M %d/%m/%Y')
+    formatted_date = target_date.strftime('%H:%M:%S %d/%m/%Y')
     return formatted_date
 
 def split_time_date(time_date:str):
     ''' 
     Function that splits time_date in the following way
-    from   'hh:mm DD/MM/YYYY'    to    ([hh, mm], [DD, MM, YYYY]) 
+    from   'hh:mm:ss DD/MM/YYYY'  to  ([hh, mm, ss], [DD, MM, YYYY]) 
     '''
     time, date = time_date.split()
     time = [int(i) for i in re.split(r'[:.,]', time)]
@@ -29,16 +29,16 @@ def split_time_date(time_date:str):
 
 def get_datetime_obj(time_date:str)->str:
     '''
-    Function that converts a date string from "HH:MM DD/MM/YYYY" to 
+    Function that converts a date string from "HH:MM:SS DD/MM/YYYY" to 
     a datetime object.
     '''
     time, date = split_time_date(time_date)
-    iso_timedate = f'{date[2]}-{date[1]}-{date[0]}T{time[0]}:{time[1]}:00'
+    iso_timedate = f'{date[2]:>02}-{date[1]:>02}-{date[0]:>02}T{time[0]:>02}:{time[1]:>02}:{time[2]:>02}'
     return dt.datetime.fromisoformat(iso_timedate)
 
 def get_sec_since_1985(date:list)->float:
     '''
-    Function to get the number of seconds since 00:00 01/01/1985 from
+    Function to get the number of seconds since 00:00:00 01/01/1985 from
     the date, in the form [DD, MM, YYYY].
     '''
     date.reverse()

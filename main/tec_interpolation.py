@@ -253,7 +253,7 @@ def tec_kriging(gim_matrix, lon: float, lat: float, nlags: int = 75, radius: int
 
 
 
-def time_interpolation(lon:float, lat:float, sat_date:float, nlags:int=75, 
+def time_interpolation(lon:float, lat:float, sat_date:str, nlags:int=75, 
                        radius:int=500, max_points:int=300, del_temp=False)->float:
     '''
     Function to linearly interpolate between two TEC maps,
@@ -266,7 +266,7 @@ def time_interpolation(lon:float, lat:float, sat_date:float, nlags:int=75,
         The satellite's longitude.
     lat: float
         The satellite's latitude.
-    sat_date: float
+    sat_date: str
         The date of the satellite's measurement.
     nlags: int, optional
         Number of lags to be used in the variogram model. Default is 75.
@@ -294,7 +294,7 @@ def time_interpolation(lon:float, lat:float, sat_date:float, nlags:int=75,
         gim1_time = [int(i) for i in re.split(r'[:.,]', getGIM[1][0])]
         gim2_time = [int(i) for i in re.split(r'[:.,]', getGIM[1][1])]
 
-        sat_rel_time = sat_time[0]*60 + sat_time[1] - gim1_time[0]*60 - gim1_time[1]
+        sat_rel_time = sat_time[0]*60 + sat_time[1] + sat_time[2]/60 - gim1_time[0]*60 - gim1_time[1] - gim1_time[2]/60
 
         tec1 = tec_kriging(gim1, lon, lat, nlags = nlags, radius = radius, max_points = max_points)
         tec2 = tec_kriging(gim2, lon, lat, nlags = nlags, radius = radius, max_points = max_points)

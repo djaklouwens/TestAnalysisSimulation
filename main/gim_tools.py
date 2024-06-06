@@ -24,7 +24,7 @@ def get_timeslot(time:List):
     
     Parameters
     ----------
-    time: List (in the form [hh, mm])
+    time: List (in the form [hh, mm, ss])
     
     Returns
     -------
@@ -52,14 +52,14 @@ def get_time(timeslot:int, rtype='str'):
 
     if rtype=='str':
         if not isinstance(timeslot, int):
-            return [f'{hours[i]:>02}:{minutes[i]:>02}' for i in range(len(timeslot))]
+            return [f'{hours[i]:>02}:{minutes[i]:>02}:00' for i in range(len(timeslot))]
         else:
-            return f'{hours:>02}:{minutes:>02}'
+            return f'{hours:>02}:{minutes:>02}:00'
     elif rtype=='array':
         if not isinstance(timeslot, int):
-            return [[hours[i], minutes[i]] for i in range(len(timeslot))]
+            return [[hours[i], minutes[i], 00] for i in range(len(timeslot))]
         else:
-            return [hours, minutes]
+            return [hours, minutes, 00]
 
 def construct_url(time_date:str, 
                   url_base:str=r'https://sideshow.jpl.nasa.gov/pub/iono_daily/gim_for_research/')->str:
@@ -235,13 +235,13 @@ def get_GIM(time_date:str, plot:bool=False,
         new_date = dt_extra.get_next_day(date)
         
         # construct the next time date to fetch the map
-        next_time_date = f'00:00 {new_date[0]}/{new_date[1]}/{new_date[2]}'
+        next_time_date = f'00:00:00 {new_date[0]}/{new_date[1]}/{new_date[2]}'
 
         # recover the map recursively
         next_GIM_map, next_time_str = get_GIM(next_time_date, del_temp=False)
 
         # reset the original time_date 
-        time_date = f'23:45 {date[0]}/{date[1]}/{date[2]}'
+        time_date = f'23:45:00 {date[0]}/{date[1]}/{date[2]}'
         next_day_map = True
 
     # fetch GIM file
@@ -321,6 +321,6 @@ def plot_TEC(tec_map:np.ndarray, time_date:str, grid=True, save_fig=False, fpath
     plt.show()
 
 if __name__=='__main__':
-    time_date = '13.20 04/03/2015'
+    time_date = '13.20.00 04/03/2015'
     print(project_dir)
 

@@ -1,10 +1,16 @@
-from rads_extraction import extract_rads_pro
-from tec_interpolation import mass_interpolate
-import matplotlib.pyplot as plt
+import os
+
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.optimize import minimize
 from scipy.stats import linregress
-print("starting full_integration.py")
+
+from directory_paths import project_dir as pj
+from tec_interpolation import mass_interpolate, delete_failed_indices
+from rads_extraction import extract_rads_pro
+
+print(f"starting {__name__}.py")
+
 # Parameters
 nlags: int = 50
 radius: int = 500
@@ -15,29 +21,8 @@ max_lat: float = None
 
 # Extract the RADS data
 
-#corrected_file_name = 'j3_2016_summer.nc'
-#uncorrected_file_name = 'j3_2016_summer_no_iono.nc'
-
-#corrected_file_name = 'j3_160701_60.nc'
-#uncorrected_file_name = 'j3_160701_60_noiono.nc'
-
-corrected_file_name = 'j3_170101_60.nc'
-uncorrected_file_name = 'j3_170101_60_noiono.nc'
-
-#corrected_file_name = 'c2_2016_summer.nc'
-#uncorrected_file_name = 'c2_2016_summer_no_iono.nc'
-
-#corrected_file_name = 'j3_2017_23000.nc'
-#uncorrected_file_name = 'j3_2017_23000_noiono.nc'
-
-#corrected_file_name = 'j3_2017_1920.nc'
-#uncorrected_file_name = 'j3_2017_1920_noiono.nc'
-
-#corrected_file_name = 'c2_2017_18000.nc'
-#uncorrected_file_name = 'c2_2017_18000_noiono.nc'
-
-#corrected_file_name = 's3a_2017_1500.nc'
-#uncorrected_file_name = 's3a_2017_1500_noiono.nc'
+corrected_file_name = os.path.join(pj, r'RADS\\03_22_01_data\\j3_240122.asc')
+uncorrected_file_name = os.path.join(pj, r'RADS\\03_22_01_data\\j3_240122_noiono.asc')
 
 print("Selected SLA files: ", corrected_file_name," and " , uncorrected_file_name)
 print("Extracting RADS data")
@@ -46,16 +31,6 @@ corrected_extraction, uncorrected_extraction = extract_rads_pro(corrected_file_n
 corrected_time_list, corrected_lat_array, corrected_lon_array, corrected_sla_array = corrected_extraction
 uncorrected_time_list, uncorrected_lat_array, uncorrected_lon_array, uncorrected_sla_array = uncorrected_extraction
 
-
-def delete_failed_indices(failed_indices, time_list, lat_array, lon_array, sla_array):
-    failed_indices.reverse()
-    for index in failed_indices:
-        del time_list[index]
-        lat_array = np.delete(lat_array, index, axis=0)
-        lon_array = np.delete(lon_array, index, axis=0)
-        sla_array = np.delete(sla_array, index, axis=0)
-    return time_list, lat_array, lon_array, sla_array
-
 print("Data files match")
 print("RADS Extraction successful!")
 # Interpolate the TEC data
@@ -63,11 +38,11 @@ TEC_GIM, failed_indices = mass_interpolate(corrected_lon_array, corrected_lat_ar
 corrected_time_list, corrected_lat_array, corrected_lon_array, corrected_sla_array = delete_failed_indices(failed_indices, corrected_time_list, corrected_lat_array, corrected_lon_array, corrected_sla_array)
 uncorrected_time_list, uncorrected_lat_array, uncorrected_lon_array, uncorrected_sla_array = delete_failed_indices(failed_indices, uncorrected_time_list, uncorrected_lat_array, uncorrected_lon_array, uncorrected_sla_array)
 
+print(f'Number of failed indices: {len(failed_indices)}')
 
 delta_sla_array = corrected_sla_array - uncorrected_sla_array
-print ("delta_sla_array: ", delta_sla_array)
-print("TEC_GIM results; " , TEC_GIM)
-
+print (f"delta_sla_array (size: {delta_sla_array.size}): {delta_sla_array}")
+print (f"TEC_GIM results: (size: {TEC_GIM.size}): {TEC_GIM}")
 
 freq = 13.575*10**9
 TEC_Jason = delta_sla_array/(40.3/freq**2)/ 10**16

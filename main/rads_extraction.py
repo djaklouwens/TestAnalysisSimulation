@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
 
 import datetime_tools as dt_extra
+import alert
 
 warnings.filterwarnings('ignore', category=UserWarning)
 
@@ -50,7 +51,6 @@ def find_start_passes(file_path, verbose=True):
     
     return start_pass_lines
 
-
 def set_color(secs, cmap='Spectral'):
     cmap = plt.get_cmap(cmap)
     time_date = dt_extra.get_time_date(secs)
@@ -75,6 +75,8 @@ def extract_rads(file_path, pass_n=None, start_pass_lines=None, max_lat=None,
             sla_array = np.array(ds['sla'][:])
         finally:
             ds.close()
+
+        pass_n = 0
     elif os.path.splitext(file_path)[-1].lower() == '.asc':
         if start_pass_lines is None:
             start_pass_lines = find_start_passes(file_path, verbose=False)
@@ -138,7 +140,7 @@ def extract_rads(file_path, pass_n=None, start_pass_lines=None, max_lat=None,
         sla_array  = sla_array[indices]
 
     # Plot the pass if needed
-    if plot:
+    if plot and isinstance(pass_n, int):
         color = set_color(np.average(secs_array))
 
         earth.scatter(lon_array, lat_array, s=20, c=color, marker='X', 
@@ -209,13 +211,20 @@ def simplify_extraction(extraction): # deletes all double entries in the extract
         if time in extraction[0][:i]:
             indices_to_delete.append(i)            
     extraction = del_indices([extraction], indices_to_delete)[0]
+
+    print(len(indices_to_delete))
     return extraction
 
 def extract_rads_pro(corrected_file, uncorrected_file, gimfile=None, max_lat=None, max_size=None, pass_n=None):
    
     if gimfile is None:
+        alert.print_status(f'Start extraction of corrected file: {os.path.split(corrected_file)[-1]}')
         corrected_extraction = simplify_extraction(extract_rads(corrected_file, pass_n=pass_n, max_lat=max_lat))
+        alert.print_status(f'Finish extraction of corrected file: {os.path.split(corrected_file)[-1]}')
+
+        alert.print_status(f'Start extraction of uncorrected file: {os.path.split(uncorrected_file)[-1]}')
         uncorrected_extraction = match_extractions(corrected_extraction, simplify_extraction(extract_rads(uncorrected_file, pass_n=pass_n, max_lat=max_lat)))
+        alert.print_status(f'Finish extraction of uncorrected file: {os.path.split(uncorrected_file)[-1]}')
 
         check_extractions(corrected_extraction, uncorrected_extraction)
 
@@ -230,9 +239,17 @@ def extract_rads_pro(corrected_file, uncorrected_file, gimfile=None, max_lat=Non
         return corrected_extraction, uncorrected_extraction
     
     else:
+        alert.print_status(f'Start extraction of corrected file: {os.path.split(corrected_file)[-1]}')
         corrected_extraction = simplify_extraction(extract_rads(corrected_file, pass_n=pass_n, max_lat=max_lat))
+        alert.print_status(f'Finish extraction of corrected file: {os.path.split(corrected_file)[-1]}')
+
+        alert.print_status(f'Start extraction of uncorrected file: {os.path.split(uncorrected_file)[-1]}')
         uncorrected_extraction, gim_extraction = match_extractions(corrected_extraction, simplify_extraction(extract_rads(uncorrected_file, pass_n=pass_n, max_lat=max_lat)), simplify_extraction(extract_rads(gimfile, pass_n=pass_n, max_lat=max_lat)))
+        alert.print_status(f'Finish extraction of uncorrected file: {os.path.split(uncorrected_file)[-1]}')
+
+        alert.print_status(f'Start extraction of gim_corrected file: {os.path.split(gimfile)[-1]}')
         gim_extraction = match_extractions(corrected_extraction, simplify_extraction(extract_rads(gimfile, pass_n=pass_n, max_lat=max_lat)))
+        alert.print_status(f'Finish extraction of gim_corrected file: {os.path.split(gimfile)[-1]}')
 
         check_extractions(corrected_extraction, uncorrected_extraction)
         check_extractions(corrected_extraction, gim_extraction)
