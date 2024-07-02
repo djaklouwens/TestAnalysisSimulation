@@ -14,14 +14,14 @@ import datetime_tools as dt_extra
 from directory_paths import project_dir, res_dir
 
 # the beta is particular to the sentinel-3a!
-alpha, beta =  integration_tools.alpha, integration_tools.beta_S3
+alpha, beta =  integration_tools.alpha,w/integration_tools.alpha
 
 # fetching the data
 alert.print_status('Start Extracting RADS Files')
 corrected_file   = r'RADS\\03_22_01_data\\s3a_240122.asc'
 uncorrected_file = r'RADS\\03_22_01_data\\s3a_240122_noiono.asc'
 gim_file = r'RADS\\03_22_01_data\\s3a_240122_gim.asc'
-pass_n = 30
+pass_n = 15
 
 data = rads_extraction.extract_rads_pro(corrected_file=os.path.join(project_dir,corrected_file),
                                         uncorrected_file=os.path.join(project_dir,uncorrected_file),

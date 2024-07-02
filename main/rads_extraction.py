@@ -56,12 +56,21 @@ def find_start_passes(file_path, verbose=False, results=False):
         with open(file_path, 'r') as f:
             df = pd.read_table(f, sep=',', header=0, index_col=0)
         
-        time = df['Time'].to_list()               
-        time2 = [dt_extra.get_datetime_obj(time_i, inverse=True) for time_i in time]
-        time = np.array([dt_extra.get_sec_since_1985(time_i) for time_i in time2])
 
-        diff = np.concatenate((np.array([1000]), time[1:] - time[:-1]))
-        start_pass_lines = np.arange(0, time.size, 1)[diff > 10*60]
+        lat = df['Lat'].to_numpy()
+        # time = df['Time'].to_list()               
+        # time2 = [dt_extra.get_datetime_obj(time_i, inverse=True) for time_i in time]
+        # time = np.array([dt_extra.get_sec_since_1985(time_i) for time_i in time2])
+
+        # diff = np.concatenate((np.array([1000]), time[1:] - time[:-1]))
+        #TODO: look at difference in latitude: increasing or decreasing
+        # start_pass_lines = np.arange(0, time.size, 1)[diff > 10*60]
+        diff = lat[1:] - lat[:-1]
+        diff = np.concatenate((diff[0], diff))
+        sign_change = np.concatenate((np.array([-1]), diff[1:] * diff[:-1])) < 0
+        start_pass_lines = np.arange(0, lat.size, 1)[sign_change]
+
+
 
     if verbose:
         print(f'There are {len(start_pass_lines)} passes in ({file_path})')

@@ -20,9 +20,11 @@ alpha, beta = integration_tools.alpha, integration_tools.beta_CS
 alert.print_status('Start Extracting RADS Files')
 corrected_file   = r'RADS\\03_22_01_data\\c2_240122.asc'
 uncorrected_file = r'RADS\\03_22_01_data\\c2_240122_noiono.asc'
+pass_n = 2
 
 data = rads_extraction.extract_rads_pro(corrected_file=os.path.join(project_dir,corrected_file),
-                                        uncorrected_file=os.path.join(project_dir,uncorrected_file))
+                                        uncorrected_file=os.path.join(project_dir,uncorrected_file),
+                                        pass_n=pass_n)
 
 time, lat, lon, sla_RADS_gim    = data[0] 
 time, lat, lon, sla_uncorrected = data[1]
